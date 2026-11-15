@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#2D4BD8">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<title>Gym Tracker</title>
+<style>
+:root{--bg:#ECEEF1;--cd:#fff;--tx:#15181D;--mu:#6B7380;--ln:#D9DDE3;--ac:#2D4BD8;--ti:#DDE5FF}
+@media(prefers-color-scheme:dark){:root{--bg:#101216;--cd:#1A1D23;--tx:#ECEEF1;--mu:#98A0AD;--ln:#2A2F38;--ac:#8FA6FF;--ti:#1E2748}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.35 system-ui,-apple-system,Roboto,sans-serif;font-variant-numeric:tabular-nums}
+header{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;padding:calc(6px + env(safe-area-inset-top)) 8px 6px;background:var(--bg);border-bottom:1px solid var(--ln)}
+header button{width:44px;height:44px;font-size:28px;background:none;border:0;color:var(--tx)}
+h1{font-size:17px;margin:0}
+h2{font-size:22px;margin:14px 2px 2px;letter-spacing:-.01em}
+main{padding:0 12px 100px}
+.card{background:var(--cd);border:1px solid var(--ln);border-radius:10px;padding:12px;margin:10px 0}
+.mut{color:var(--mu);font-size:13px}
+.set{display:grid;grid-template-columns:20px 1fr 1fr 44px;gap:8px;align-items:center;margin-top:8px}
+.set span{color:var(--mu);font-size:13px}
+input{width:100%;height:44px;font:inherit;font-size:18px;text-align:center;border:1px solid var(--ln);border-radius:8px;background:var(--bg);color:var(--tx)}
+.ck{width:44px;height:44px;border-radius:50%;border:2px solid var(--ln);background:none;color:var(--mu);font-size:20px;padding:0}
+.ck.on{background:var(--ac);border-color:var(--ac);color:var(--bg)}
+.row{display:flex;align-items:center;gap:10px;background:var(--cd);border:1px solid var(--ln);border-radius:10px;padding:8px 10px;margin:8px 0}
+.row.on{background:var(--ti)}
+.row>span{flex:1}
+.q{display:flex;align-items:center;gap:6px;flex:none!important}
+.q button{width:40px;height:40px;border-radius:8px;border:1px solid var(--ln);background:var(--bg);color:var(--tx);font-size:20px}
+.q b{min-width:58px;text-align:center}
+.btn{display:block;width:100%;height:48px;border:0;border-radius:10px;background:var(--ac);color:var(--bg);font:inherit;font-weight:600;margin-top:10px;text-align:center;line-height:48px}
+.warn{background:var(--ti);border:1px solid var(--ac);border-radius:10px;padding:10px;margin:10px 0}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--cd);border-top:1px solid var(--ln);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;height:56px;border:0;background:none;color:var(--mu);font:inherit;font-weight:600}
+nav button.on{color:var(--ac);box-shadow:inset 0 3px 0 var(--ac)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+</style></head><body>
+<header><button data-a="pv" aria-label="Previous day">‹</button><h1 id="dt"></h1><button data-a="nx" aria-label="Next day">›</button></header>
+<main id="v"></main>
+<nav><button data-a="tab" data-t="w">Workout</button><button data-a="tab" data-t="f">Food</button><button data-a="tab" data-t="b">Backup</button></nav>
+<script>
+const S=[[
+["Chest + triceps · heavy","Flat dumbbell press|3|6–8;Incline dumbbell press|3|8–10;Incline dumbbell fly|2|10–12;Cable crossover fly (low to high)|2|10–12;Overhead dumbbell extension|3|8–10;Lying dumbbell skull-crusher|2|10–12;Seated dip machine|2|8–10"],
+["Back + biceps · heavy","Lat pulldown|3|8–12;One-arm dumbbell row|3|6–10;Chest-supported dumbbell row|2|8–12;Straight-arm cable pulldown|2|10–12;Incline dumbbell curl|3|8–10;Hammer curl|2|8–10;One-arm dumbbell preacher curl|2|10–12"],
+["Shoulders + arms","Seated dumbbell shoulder press|3|8–10;Dumbbell lateral raise|4|12–20;Rear-delt fly (incline bench)|3|12–15;Single-arm cable lateral raise|2|12–15;Spider curl|3|10–12;Rope pushdown|3|12–15;Calf raise (Smith or leg press)|4|10–15"],
+["Chest + triceps · volume","Incline dumbbell press|3|10–12;Flat dumbbell press|2|12–15;Cable crossover fly (mid-height)|3|12–15;Pec deck|2|15–20;One-arm overhead dumbbell extension|3|10–12;Seated dip machine|2|12–15;Rope pushdown|2|15–20"],
+["Back + biceps · volume","Lat pulldown (neutral or close grip)|3|10–12;Chest-supported dumbbell row|3|10–12;Dumbbell pullover|2|12–15;Dumbbell shrug|2|12–15;Incline dumbbell curl|3|12–15;Cross-body hammer curl|2|10–12;Cable curl (low pulley)|2|12–15"],
+["Legs + light shoulders","Dumbbell Bulgarian split squat|3|8–10;Leg press (deep)|4|10–15;Leg press (feet low)|3|12–15;Dumbbell Romanian deadlift|3|8–10;Dumbbell back extension|3|10–12;45° back extension (plate)|2|12–15;Single-leg dumbbell calf raise|4|10–15;Dumbbell lateral raise|3|15–20;Reverse pec deck|2|15–20"]
+],[
+["Chest + triceps · heavy","Barbell bench press|3|6–8;Incline press (Smith or barbell)|3|8–10;Plate-loaded incline chest press|2|8–12;Pec deck|2|10–12;Overhead cable extension|3|8–12;EZ-bar skull-crusher|2|8–10;Rope pushdown|2|10–12"],
+["Back + biceps · heavy","Barbell bent-over row|3|6–8;Lat pulldown (overhand)|3|8–10;Seated cable row|2|8–12;45° back extension|2|10–15;EZ-bar preacher curl|3|8–10;Standing barbell curl|2|8–10;Cable curl (low pulley)|2|10–12"],
+["Shoulders + arms","Overhead press (barbell or Smith)|3|6–8;Cable lateral raise (behind the back)|4|12–20;Reverse pec deck|3|12–15;Face pull|2|12–15;Rope hammer curl|3|10–12;Seated dip machine|3|10–12;Calf raise (Smith or leg press)|4|10–15"],
+["Chest + triceps · volume","Smith incline press|3|10–12;Smith or barbell flat press|2|12–15;Pec deck|3|12–15;Cable crossover fly (low to high)|2|15–20;Overhead cable extension|3|12–15;EZ-bar skull-crusher|2|12–15;Straight-bar pushdown|2|15–20"],
+["Back + biceps · volume","Seated cable row|3|10–12;Lat pulldown (underhand)|3|10–12;Straight-arm cable pulldown|2|12–15;Smith or barbell shrug|2|12–15;Cable curl (low pulley)|3|12–15;Standing EZ-bar curl|2|10–12;EZ-bar preacher curl (slow)|2|12–15"],
+["Legs + light shoulders","Barbell back squat|3|6–8;Leg press (feet low)|4|8–12;Leg press (feet low, high reps)|3|12–15;Barbell Romanian deadlift|3|8–10;45° back extension|3|10–12;45° back extension (plate)|2|12–15;Calf raise (Smith or leg press)|4|10–15;Cable lateral raise|3|15–20;Face pull|2|15–20"]
+]];
+// id, label, unit, default qty, step, kcal per unit, protein per unit
+const F=[['shake','Morning shake (oats, muesli, milk, flax)','',1,.5,398,22.4],['banana','Bananas','',4,1,105,1.1],['soy','Soy isolate (35 g scoop)','',1,1,132,30],['egg','Eggs','',6,1,73,6.3],['chana','Chana, dry','g',50,10,3.6,.2],['pnut','Peanuts','g',80,10,5.7,.25],['rice','Rice, cooked','g',600,50,1.3,.026],['curd','Curd','g',200,50,.6,.035],['ghee','Ghee','tbsp',1,.5,120,0],['creat','Creatine','dose',1,1,0,0]];
+const K='gymtrk1',$=s=>document.querySelector(s);
+let D;try{D=JSON.parse(localStorage.getItem(K))}catch(e){}
+if(!D||!D.logs)D={start:'2026-11-16',logs:{},bk:0};
+const save=()=>{try{localStorage.setItem(K,JSON.stringify(D))}catch(e){alert('Could not save. Free some phone storage.')}};
+const pad=n=>String(n).padStart(2,'0'),iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()),dt=s=>new Date(s+'T12:00:00');
+const mon=s=>{const x=dt(s);x.setDate(x.getDate()-(x.getDay()+6)%7);return x};
+const wk=s=>((Math.round((mon(s)-mon(D.start))/6048e5)%2)+2)%2;
+const day=()=>D.logs[cur]||{},L=()=>D.logs[cur]||(D.logs[cur]={w:{},f:{}});
+let cur=iso(new Date()),tab=location.hash=='#food'?'f':'w';
+function last(k){for(const x of Object.keys(D.logs).filter(x=>x<cur).sort().reverse()){const a=D.logs[x].w&&D.logs[x].w[k];if(a){const r=a.filter(s=>s&&s[2]).map(s=>[s[0],s[1]]);if(r.length)return r}}return null}
+function rW(){
+ const d=dt(cur).getDay(),w=wk(cur);
+ if(!d)return'<h2>Rest day</h2><div class="card">Sunday is for eating and sleeping. Check the Food tab.</div>';
+ const [t,s]=S[w][d-1],lg=day().w||{};
+ const old=Object.keys(D.logs).length&&Date.now()-D.bk>6048e5;
+ let h=(old?`<div class="warn" data-a="bk">No backup in the last week. Tap to save one.</div>`:'')+`<h2>${t}</h2><div class="mut" style="margin:0 2px">Week ${w+1}. Tap ✓ to log a set; empty fields use last time’s numbers.</div>`;
+ s.split(';').forEach(x=>{const [n,ns,r]=x.split('|'),k=w+''+d+'|'+n,got=lg[k]||[],pv=last(k);
+  h+=`<div class="card"><b>${n}</b><div class="mut">${ns} × ${r}${pv?' · last: '+pv.map(a=>a[0]+'×'+a[1]).join(', '):''}</div>`;
+  for(let j=0;j<+ns;j++){const g=got[j]||[],p=pv?(pv[j]||pv[pv.length-1]):[];
+   h+=`<div class="set"><span>${j+1}</span><input type="number" inputmode="decimal" step="2.5" aria-label="kg" placeholder="${p[0]??'kg'}" value="${g[0]??''}" data-k="${k}" data-j="${j}" data-f="0"><input type="number" inputmode="numeric" aria-label="reps" placeholder="${p[1]??'reps'}" value="${g[1]??''}" data-k="${k}" data-j="${j}" data-f="1"><button class="ck${g[2]?' on':''}" data-a="ck" data-k="${k}" data-j="${j}" aria-label="Done">✓</button></div>`}
+  h+='</div>'});
+ return h}
+function rF(){
+ const f=day().f||{};let k=0,p=0;
+ let h='<h2>Food</h2><div class="mut" style="margin:0 2px">Tap ✓ if you ate it as usual. Use − and + if the amount changed.</div>'+F.map(x=>{const q=f[x[0]]||0;k+=q*x[5];p+=q*x[6];
+  return`<div class="row${q?' on':''}"><button class="ck${q?' on':''}" data-a="ft" data-i="${x[0]}" aria-label="Ate ${x[1]}">✓</button><span>${x[1]}</span><span class="q"><button data-a="fm" data-i="${x[0]}" aria-label="Less">−</button><b>${q}${x[2]?' '+x[2]:''}</b><button data-a="fp" data-i="${x[0]}" aria-label="More">+</button></span></div>`}).join('');
+ const lo=iso(new Date(dt(cur)-6048e5)),ds=Object.keys(D.logs).filter(x=>x<=cur&&x>lo&&D.logs[x].bw),av=ds.length?(ds.reduce((s,x)=>s+D.logs[x].bw,0)/ds.length).toFixed(1):'–';
+ return h+`<div class="card"><b>${Math.round(k).toLocaleString()} kcal · ${Math.round(p)} g protein</b><div class="mut">Estimates from standard values, about ±10%.</div></div><div class="card"><label>Body weight today (kg)<input id="bw" type="number" inputmode="decimal" step="0.1" value="${day().bw??''}"></label><div class="mut" style="margin-top:6px">7-day average: ${av} kg</div></div>`}
+function rB(){
+ const n=Object.keys(D.logs).length;
+ return`<h2>Backup</h2><div class="card"><p style="margin:0">${n} days logged. Last backup: ${D.bk?new Date(D.bk).toLocaleDateString():'never'}.</p><button class="btn" data-a="exp">Save backup file</button><p class="mut">Keep the file on Drive or send it to yourself. On a new phone, install the app and restore it here.</p><label class="btn" style="background:var(--ti);color:var(--tx)">Restore from backup file<input id="imp" type="file" accept=".json,application/json" hidden></label></div><div class="card"><label>Week 1 started on (a Monday)<input id="st" type="date" value="${D.start}"></label></div>`}
+function render(){
+ $('#dt').textContent=(cur==iso(new Date())?'Today · ':'')+dt(cur).toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'});
+ document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t==tab));
+ $('#v').innerHTML=tab=='w'?rW():tab=='f'?rF():rB()}
+function imp(f){if(!f)return;f.text().then(s=>{try{const n=JSON.parse(s);if(!n.logs)throw 0;if(confirm('Replace the data on this phone with this backup ('+Object.keys(n.logs).length+' days)?')){D=n;save();render()}}catch(e){alert('That file isn’t a Gym Tracker backup.')}})}
+document.addEventListener('change',e=>{const t=e.target;
+ if(t.dataset.k!=null){const a=L().w[t.dataset.k]||(L().w[t.dataset.k]=[]),r=a[+t.dataset.j]||(a[+t.dataset.j]=['','',0]);r[+t.dataset.f]=t.value;save()}
+ else if(t.id=='bw'){L().bw=t.value?+t.value:undefined;save();render()}
+ else if(t.id=='st'){D.start=t.value||D.start;save();render()}
+ else if(t.id=='imp')imp(t.files[0])});
+document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t)return;const a=t.dataset.a;
+ if(a=='ck'){const i=t.parentElement.querySelectorAll('input'),kg=i[0].value||i[0].placeholder,rp=i[1].value||i[1].placeholder,ar=L().w[t.dataset.k]||(L().w[t.dataset.k]=[]),r=ar[+t.dataset.j]||(ar[+t.dataset.j]=['','',0]);
+  if(r[2])r[2]=0;else{if(isNaN(parseFloat(kg))||isNaN(parseFloat(rp))){i[isNaN(parseFloat(kg))?0:1].focus();return}r[0]=kg;r[1]=rp;r[2]=1}
+  i[0].value=r[0];i[1].value=r[1];t.classList.toggle('on',!!r[2]);save()}
+ else if(a=='ft'||a=='fm'||a=='fp'){const f=F.find(x=>x[0]==t.dataset.i),m=L().f,q=m[f[0]]||0;m[f[0]]=a=='ft'?(q>0?0:f[3]):Math.max(0,+(q+(a=='fp'?f[4]:-f[4])).toFixed(2));save();render()}
+ else if(a=='pv'||a=='nx'){const d=dt(cur);d.setDate(d.getDate()+(a=='nx'?1:-1));cur=iso(d);render()}
+ else if(a=='tab'){tab=t.dataset.t;render();scrollTo(0,0)}
+ else if(a=='bk'){tab='b';render()}
+ else if(a=='exp'){D.bk=Date.now();save();const u=URL.createObjectURL(new Blob([JSON.stringify(D,null,1)],{type:'application/json'})),x=document.createElement('a');x.href=u;x.download='gym-tracker-backup-'+iso(new Date())+'.json';x.click();setTimeout(()=>URL.revokeObjectURL(u),1e4);render()}});
+addEventListener('hashchange',()=>{tab=location.hash=='#food'?'f':'w';render()});
+if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js');
+render();
+</script></body></html>
