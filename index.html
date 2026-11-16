@@ -34,6 +34,10 @@ input{width:100%;height:44px;font:inherit;font-size:18px;text-align:center;borde
 nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--cd);border-top:1px solid var(--ln);padding-bottom:env(safe-area-inset-bottom)}
 nav button{flex:1;height:56px;border:0;background:none;color:var(--mu);font:inherit;font-weight:600}
 nav button.on{color:var(--ac);box-shadow:inset 0 3px 0 var(--ac)}
+summary{min-height:32px;cursor:pointer}
+.it{display:flex;align-items:center;gap:12px;padding:8px 0;border-top:1px solid var(--ln)}
+.it:first-of-type{margin-top:8px}
+.it input{width:24px;height:24px;flex:none;accent-color:var(--ac)}
 button:focus-visible,input:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
 </style></head><body>
 <header><button data-a="pv" aria-label="Previous day">‹</button><h1 id="dt"></h1><button data-a="nx" aria-label="Next day">›</button></header>
@@ -57,7 +61,21 @@ const S=[[
 ]];
 // id, label, unit, default qty, step, kcal per unit, protein per unit
 const F=[['shake','Morning shake (oats, muesli, milk, flax)','',1,.5,398,22.4],['banana','Bananas','',4,1,105,1.1],['soy','Soy isolate (35 g scoop)','',1,1,132,30],['egg','Eggs','',6,1,73,6.3],['chana','Chana, dry','g',50,10,3.6,.2],['pnut','Peanuts','g',80,10,5.7,.25],['rice','Rice, cooked','g',600,50,1.3,.026],['curd','Curd','g',200,50,.6,.035],['ghee','Ghee','tbsp',1,.5,120,0],['creat','Creatine','dose',1,1,0,0]];
+// Warm-ups and stretches by day type: c = chest + triceps, b = back + biceps, s = shoulders + arms, l = legs
+const RU='2–3 light ramp-up sets on your first lift (about 50% × 8, 70% × 5, then 85% × 2–3 on heavy days), 60 s rest';
+const WU={
+c:['Easy bike or incline walk, 4–5 min','Arm circles, forward and back × 10','Cross-body arm swings × 10','Scapular push-ups × 10','Open-book thoracic rotation × 8 per side','Bodyweight push-ups × 10',RU],
+b:['Easy bike or incline walk, 4–5 min','Cat–cow × 10','Scapular pulldowns (hang from the lat bar and shrug down) × 10','Thoracic rotation × 8 per side','Bodyweight good mornings × 10','Light rear-delt flies × 15',RU],
+s:['Easy bike or incline walk, 4–5 min','Arm circles × 10','Cross-body arm swings × 10','Empty-bar pass-throughs × 10','Light dumbbell external rotations × 15','Scapular push-ups × 10',RU],
+l:['Easy bike or incline walk, 4–5 min','Bodyweight squats × 15','Hip circles × 10 per side','Walking lunges with a twist × 8 per side','Leg swings, front-back and side-side × 10 each','Glute bridges × 15','Ankle rocks × 10 per side',RU]};
+const ST={
+c:['Doorway chest stretch','Overhead triceps stretch','Cross-body shoulder stretch'],
+b:['Overhead lat stretch (hold a rack and sit back)','Wall biceps stretch','Child’s pose'],
+s:['Cross-body shoulder stretch','Overhead triceps stretch','Wall biceps stretch'],
+l:['Hip-flexor lunge stretch','Standing quad stretch','Seated hamstring stretch','Wall calf stretch','Figure-four glute stretch']};
+const TY={1:'c',2:'b',3:'s',4:'c',5:'b',6:'l'};
 const K='gymtrk1',$=s=>document.querySelector(s);
+const blk=(t,a,g,o)=>{const c=(day().x||{})[g]||[];return`<details class="card"${o?' open':''}><summary><b>${t}</b></summary>`+a.map((x,i)=>`<label class="it"><input type="checkbox" data-g="${g}" data-i="${i}"${c[i]?' checked':''}><span>${x}</span></label>`).join('')+'</details>'};
 let D;try{D=JSON.parse(localStorage.getItem(K))}catch(e){}
 if(!D||!D.logs)D={start:'2026-11-16',logs:{},bk:0};
 const save=()=>{try{localStorage.setItem(K,JSON.stringify(D))}catch(e){alert('Could not save. Free some phone storage.')}};
@@ -73,11 +91,13 @@ function rW(){
  const [t,s]=S[w][d-1],lg=day().w||{};
  const old=Object.keys(D.logs).length&&Date.now()-D.bk>6048e5;
  let h=(old?`<div class="warn" data-a="bk">No backup in the last week. Tap to save one.</div>`:'')+`<h2>${t}</h2><div class="mut" style="margin:0 2px">Week ${w+1}. Tap ✓ to log a set; empty fields use last time’s numbers.</div>`;
+ h+=blk('Warm-up (about 10 min)',WU[TY[d]],'w',1);
  s.split(';').forEach(x=>{const [n,ns,r]=x.split('|'),k=w+''+d+'|'+n,got=lg[k]||[],pv=last(k);
   h+=`<div class="card"><b>${n}</b><div class="mut">${ns} × ${r}${pv?' · last: '+pv.map(a=>a[0]+'×'+a[1]).join(', '):''}</div>`;
   for(let j=0;j<+ns;j++){const g=got[j]||[],p=pv?(pv[j]||pv[pv.length-1]):[];
    h+=`<div class="set"><span>${j+1}</span><input type="number" inputmode="decimal" step="2.5" aria-label="kg" placeholder="${p[0]??'kg'}" value="${g[0]??''}" data-k="${k}" data-j="${j}" data-f="0"><input type="number" inputmode="numeric" aria-label="reps" placeholder="${p[1]??'reps'}" value="${g[1]??''}" data-k="${k}" data-j="${j}" data-f="1"><button class="ck${g[2]?' on':''}" data-a="ck" data-k="${k}" data-j="${j}" aria-label="Done">✓</button></div>`}
   h+='</div>'});
+ h+=blk('Stretches after training (30 s each, 2 rounds)',ST[TY[d]],'s',0);
  return h}
 function rF(){
  const f=day().f||{};let k=0,p=0;
@@ -95,6 +115,7 @@ function render(){
 function imp(f){if(!f)return;f.text().then(s=>{try{const n=JSON.parse(s);if(!n.logs)throw 0;if(confirm('Replace the data on this phone with this backup ('+Object.keys(n.logs).length+' days)?')){D=n;save();render()}}catch(e){alert('That file isn’t a Gym Tracker backup.')}})}
 document.addEventListener('change',e=>{const t=e.target;
  if(t.dataset.k!=null){const a=L().w[t.dataset.k]||(L().w[t.dataset.k]=[]),r=a[+t.dataset.j]||(a[+t.dataset.j]=['','',0]);r[+t.dataset.f]=t.value;save()}
+ else if(t.dataset.g){const x=L().x||(L().x={}),a=x[t.dataset.g]||(x[t.dataset.g]=[]);a[+t.dataset.i]=t.checked?1:0;save()}
  else if(t.id=='bw'){L().bw=t.value?+t.value:undefined;save();render()}
  else if(t.id=='st'){D.start=t.value||D.start;save();render()}
  else if(t.id=='imp')imp(t.files[0])});
