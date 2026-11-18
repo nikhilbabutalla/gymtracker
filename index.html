@@ -44,20 +44,47 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--ac);outline-off
 <main id="v"></main>
 <nav><button data-a="tab" data-t="w">Workout</button><button data-a="tab" data-t="f">Food</button><button data-a="tab" data-t="b">Backup</button></nav>
 <script>
-const S=[[
-["Chest + triceps · heavy","Flat dumbbell press|3|6–8;Incline dumbbell press|3|8–10;Incline dumbbell fly|2|10–12;Cable crossover fly (low to high)|2|10–12;Overhead dumbbell extension|3|8–10;Lying dumbbell skull-crusher|2|10–12;Seated dip machine|2|8–10"],
-["Back + biceps · heavy","Lat pulldown|3|8–12;One-arm dumbbell row|3|6–10;Chest-supported dumbbell row|2|8–12;Straight-arm cable pulldown|2|10–12;Incline dumbbell curl|3|8–10;Hammer curl|2|8–10;One-arm dumbbell preacher curl|2|10–12"],
+const S1=[[
+["Chest + triceps · heavy","Barbell bench press|3|6–8;Incline dumbbell press|3|8–10;Incline dumbbell fly|2|10–12;Cable crossover fly (low to high)|2|10–12;Overhead dumbbell extension|3|8–10;Lying dumbbell skull-crusher|2|10–12;Seated dip machine|2|8–10"],
+["Back + biceps · heavy","Barbell bent-over row|3|6–8;Lat pulldown|3|8–12;Chest-supported dumbbell row|2|8–12;Straight-arm cable pulldown|2|10–12;Incline dumbbell curl|3|8–10;Hammer curl|2|8–10;One-arm dumbbell preacher curl|2|10–12"],
 ["Shoulders + arms","Seated dumbbell shoulder press|3|8–10;Dumbbell lateral raise|4|12–20;Rear-delt fly (incline bench)|3|12–15;Single-arm cable lateral raise|2|12–15;Spider curl|3|10–12;Rope pushdown|3|12–15;Calf raise (Smith or leg press)|5|10–15"],
 ["Chest + triceps · volume","Incline dumbbell press|3|10–12;Flat dumbbell press|2|12–15;Cable crossover fly (mid-height)|3|12–15;Pec deck|2|15–20;One-arm overhead dumbbell extension|3|10–12;Seated dip machine|2|12–15;Rope pushdown|2|15–20"],
 ["Back + biceps · volume","Lat pulldown (neutral or close grip)|3|10–12;Chest-supported dumbbell row|3|10–12;Dumbbell pullover|2|12–15;Dumbbell shrug|2|12–15;Incline dumbbell curl|3|12–15;Cross-body hammer curl|2|10–12;Cable curl (low pulley)|2|12–15"],
-["Legs + light shoulders","Dumbbell Bulgarian split squat|3|8–10;Leg press (deep)|4|10–15;Leg extension|3|12–15;Dumbbell Romanian deadlift|3|8–10;Leg curl|4|10–12;45° back extension (plate)|2|12–15;Single-leg dumbbell calf raise|5|10–15;Dumbbell lateral raise|3|15–20;Reverse pec deck|2|15–20"]
+["Legs + light shoulders","Barbell back squat|3|6–8;Leg press (deep)|2|10–15;Dumbbell Bulgarian split squat|3|8–10;Leg extension|3|12–15;Barbell Romanian deadlift|3|8–10;Leg curl|4|10–12;45° back extension (plate)|2|12–15;Single-leg dumbbell calf raise|5|10–15;Dumbbell lateral raise|3|15–20;Reverse pec deck|2|15–20"]
 ],[
 ["Chest + triceps · heavy","Barbell bench press|3|6–8;Incline press (Smith or barbell)|3|8–10;Plate-loaded incline chest press|2|8–12;Pec deck|2|10–12;Overhead cable extension|3|8–12;EZ-bar skull-crusher|2|8–10;Rope pushdown|2|10–12"],
 ["Back + biceps · heavy","Barbell bent-over row|3|6–8;Lat pulldown (overhand)|3|8–10;Seated cable row|2|8–12;45° back extension|2|10–15;EZ-bar preacher curl|3|8–10;Incline dumbbell curl|2|8–10;Cable curl (low pulley)|2|10–12"],
-["Shoulders + arms","Overhead press (barbell or Smith)|3|6–8;Cable lateral raise (behind the back)|4|12–20;Reverse pec deck|3|12–15;Face pull|2|12–15;Rope hammer curl|3|10–12;Seated dip machine|3|10–12;Calf raise (Smith or leg press)|5|10–15"],
-["Chest + triceps · volume","Smith incline press|3|10–12;Smith or barbell flat press|2|12–15;Pec deck|3|12–15;Cable crossover fly (low to high)|2|15–20;Overhead cable extension|3|12–15;EZ-bar skull-crusher|2|12–15;Straight-bar pushdown|2|15–20"],
-["Back + biceps · volume","Seated cable row|3|10–12;Lat pulldown (underhand)|3|10–12;Straight-arm cable pulldown|2|12–15;Smith or barbell shrug|2|12–15;Cable curl (low pulley)|3|12–15;Standing EZ-bar curl|2|10–12;EZ-bar preacher curl (slow)|2|12–15"],
-["Legs + light shoulders","Barbell back squat|3|6–8;Leg press (feet low)|4|8–12;Leg extension|3|12–15;Barbell Romanian deadlift|3|8–10;Leg curl|4|10–12;45° back extension|2|12–15;Calf raise (Smith or leg press)|5|10–15;Cable lateral raise|3|15–20;Face pull|2|15–20"]
+["Shoulders + arms","Seated dumbbell shoulder press|3|8–10;Cable lateral raise (behind the back)|4|12–20;Reverse pec deck|3|12–15;Face pull|2|12–15;Rope hammer curl|3|10–12;Seated dip machine|3|10–12;Calf raise (Smith or leg press)|5|10–15"],
+["Chest + triceps · volume","Incline dumbbell press|3|10–12;Smith or barbell flat press|2|12–15;Pec deck|3|12–15;Cable crossover fly (low to high)|2|15–20;Overhead cable extension|3|12–15;EZ-bar skull-crusher|2|12–15;Straight-bar pushdown|2|15–20"],
+["Back + biceps · volume","Lat pulldown (neutral or close grip)|3|10–12;Seated cable row|3|10–12;Straight-arm cable pulldown|2|12–15;Smith or barbell shrug|2|12–15;Cable curl (low pulley)|3|12–15;Standing EZ-bar curl|2|10–12;EZ-bar preacher curl (slow)|2|12–15"],
+["Legs + light shoulders","Barbell back squat|3|6–8;Leg press (feet low)|2|8–12;Smith machine split squat|3|8–10;Leg extension|3|12–15;Barbell Romanian deadlift|3|8–10;Leg curl|4|10–12;45° back extension|2|12–15;Calf raise (Smith or leg press)|5|10–15;Cable lateral raise|3|15–20;Face pull|2|15–20"]
+]];
+// Block 2 (weeks 7–12): same anchors, each accessory swapped for an equivalent
+const S2=[[
+["Chest + triceps · heavy","Barbell bench press|3|6–8;Low-incline dumbbell press|3|8–10;Flat dumbbell fly|2|10–12;Cable crossover fly (high to low)|2|10–12;Seated overhead EZ-bar extension|3|8–10;Incline dumbbell skull-crusher|2|10–12;V-bar pushdown|2|8–10"],
+["Back + biceps · heavy","Barbell bent-over row|3|6–8;Lat pulldown (underhand)|3|8–12;One-arm dumbbell row|2|8–12;Dumbbell pullover|2|10–12;Bayesian cable curl|3|8–10;Incline hammer curl|2|8–10;Concentration curl|2|10–12"],
+["Shoulders + arms","Seated dumbbell shoulder press|3|8–10;Lean-away lateral raise|4|12–20;Bent-over dumbbell rear raise|3|12–15;Cable lateral raise (across the body)|2|12–15;Cable curl (low pulley)|3|10–12;Straight-bar pushdown|3|12–15;Leg press calf raise|5|10–15"],
+["Chest + triceps · volume","Incline dumbbell press|3|10–12;Smith flat press|2|12–15;Low-pulley cable fly|3|12–15;Single-arm pec deck|2|15–20;Overhead cable extension (straight bar)|3|10–12;Reverse-grip pushdown|2|12–15;Straight-bar pushdown|2|15–20"],
+["Back + biceps · volume","Lat pulldown (neutral or close grip)|3|10–12;One-arm dumbbell row|3|10–12;Straight-arm cable pulldown|2|12–15;Cable shrug|2|12–15;Bayesian cable curl|3|12–15;Reverse-grip EZ-bar curl|2|10–12;Standing EZ-bar curl|2|12–15"],
+["Legs + light shoulders","Barbell back squat|3|6–8;Leg press (feet high and wide)|2|10–15;Dumbbell walking lunge|3|8–10;Leg extension|3|12–15;Barbell Romanian deadlift|3|8–10;Leg curl|4|10–12;Single-leg dumbbell RDL|2|10–12;Leg press calf raise|5|10–15;Lean-away lateral raise|3|15–20;Cable rear-delt fly|2|15–20"]
+],[
+["Chest + triceps · heavy","Barbell bench press|3|6–8;Incline barbell press|3|8–10;Incline dumbbell squeeze press|2|8–12;Single-arm pec deck|2|10–12;Overhead cable extension (straight bar)|3|8–12;Lying cable extension|2|8–10;Seated dip machine|2|10–12"],
+["Back + biceps · heavy","Barbell bent-over row|3|6–8;Lat pulldown (wide grip)|3|8–10;Seated cable row (wide grip)|2|8–12;Back extension (plate, slow lowering)|2|10–15;Dumbbell preacher curl|3|8–10;Bayesian cable curl|2|8–10;Standing EZ-bar curl|2|10–12"],
+["Shoulders + arms","Seated dumbbell shoulder press|3|8–10;Cable lateral raise (across the body)|4|12–20;Cable rear-delt fly|3|12–15;Face pull|2|12–15;Hammer curl|3|10–12;V-bar pushdown|3|10–12;Single-leg Smith calf raise|5|10–15"],
+["Chest + triceps · volume","Incline dumbbell press|3|10–12;Neutral-grip dumbbell press|2|12–15;Single-arm pec deck|3|12–15;Cable crossover fly (high to low)|2|15–20;Seated overhead EZ-bar extension|3|12–15;Lying cable extension|2|12–15;Reverse-grip pushdown|2|15–20"],
+["Back + biceps · volume","Lat pulldown (neutral or close grip)|3|10–12;Seated cable row (wide grip)|3|10–12;Dumbbell pullover|2|12–15;Cable shrug|2|12–15;Bayesian cable curl|3|12–15;Standing EZ-bar curl|2|10–12;Dumbbell preacher curl (slow)|2|12–15"],
+["Legs + light shoulders","Barbell back squat|3|6–8;Leg press (narrow stance)|2|8–12;High step-up (each leg)|3|8–10;Leg extension|3|12–15;Barbell Romanian deadlift|3|8–10;Leg curl|4|10–12;45° back extension (slow lowering)|2|12–15;Single-leg Smith calf raise|5|10–15;Cable lateral raise (across the body)|3|15–20;Face pull|2|15–20"]
+]];
+const S=[S1,S2];
+// Small-muscle finisher, by block, then week of a 3-week cycle, then weekday (3 = Wed, 6 = Sat): [name, sets, reps]
+const FN=[[
+{3:['Side-lying dumbbell external rotation',3,'12–15'],6:['Cable hip abduction (ankle strap)',3,'12–15']},
+{3:['Prone incline Y raise (light dumbbells)',3,'12–15'],6:['Hip adduction machine',3,'12–15']},
+{3:['Push-up plus',3,'8–12'],6:['Wrist curls',3,'12–15']}
+],[
+{3:['Cable external rotation (elbow at side)',3,'12–15'],6:['Side plank hip abduction (each side)',3,'8–12']},
+{3:['Cable Y raise (low pulleys)',3,'12–15'],6:['Cable hip adduction (ankle strap)',3,'12–15']},
+{3:['Dumbbell scaption (thumbs up)',3,'10–15'],6:['Reverse wrist curls',3,'12–15']}
 ]];
 // id, label, unit, default qty, step, kcal per unit, protein per unit
 const F=[['shake','Morning shake (oats, muesli, milk, flax)','',1,.5,398,22.4],['banana','Bananas','',4,1,105,1.1],['soy','Soy isolate (35 g scoop)','',1,1,132,30],['egg','Eggs','',6,1,73,6.3],['chana','Chana, dry','g',50,10,3.6,.2],['pnut','Peanuts','g',80,10,5.7,.25],['rice','Rice, cooked','g',600,50,1.3,.026],['curd','Curd','g',200,50,.6,.035],['ghee','Ghee','tbsp',1,.5,120,0],['creat','Creatine','dose',1,1,0,0]];
@@ -81,16 +108,17 @@ if(!D||!D.logs)D={start:'2026-11-16',logs:{},bk:0};
 const save=()=>{try{localStorage.setItem(K,JSON.stringify(D))}catch(e){alert('Could not save. Free some phone storage.')}};
 const pad=n=>String(n).padStart(2,'0'),iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()),dt=s=>new Date(s+'T12:00:00');
 const mon=s=>{const x=dt(s);x.setDate(x.getDate()-(x.getDay()+6)%7);return x};
-const wk=s=>((Math.round((mon(s)-mon(D.start))/6048e5)%2)+2)%2;
+const wn=s=>Math.round((mon(s)-mon(D.start))/6048e5),md=(n,m)=>((n%m)+m)%m;
+const wk=s=>md(wn(s),2),bl=s=>md(Math.floor(wn(s)/6),2),cy=s=>md(wn(s),3);
 const day=()=>D.logs[cur]||{},L=()=>D.logs[cur]||(D.logs[cur]={w:{},f:{}});
 let cur=iso(new Date()),tab=location.hash=='#food'?'f':'w';
 function last(k){for(const x of Object.keys(D.logs).filter(x=>x<cur).sort().reverse()){const a=D.logs[x].w&&D.logs[x].w[k];if(a){const r=a.filter(s=>s&&s[2]).map(s=>[s[0],s[1]]);if(r.length)return r}}return null}
 function rW(){
  const d=dt(cur).getDay(),w=wk(cur);
  if(!d)return'<h2>Rest day</h2><div class="card">Sunday is for eating and sleeping. Check the Food tab.</div>';
- const [t,s]=S[w][d-1],lg=day().w||{};
+ const b=bl(cur),f=FN[b][cy(cur)][d],[t,s0]=S[b][w][d-1],s=f?s0+';'+f.join('|'):s0,lg=day().w||{};
  const old=Object.keys(D.logs).length&&Date.now()-D.bk>6048e5;
- let h=(old?`<div class="warn" data-a="bk">No backup in the last week. Tap to save one.</div>`:'')+`<h2>${t}</h2><div class="mut" style="margin:0 2px">Week ${w+1}. Tap ✓ to log a set; empty fields use last time’s numbers.</div>`;
+ let h=(old?`<div class="warn" data-a="bk">No backup in the last week. Tap to save one.</div>`:'')+`<h2>${t}</h2><div class="mut" style="margin:0 2px">Block ${b+1}, week ${md(wn(cur),6)+1} of 6 (${'AB'[w]}). Tap ✓ to log a set; empty fields use last time’s numbers.</div>`;
  h+=blk('Warm-up (about 10 min)',WU[TY[d]],'w',1);
  s.split(';').forEach(x=>{const [n,ns,r]=x.split('|'),k=w+''+d+'|'+n,got=lg[k]||[],pv=last(k);
   h+=`<div class="card"><b>${n}</b><div class="mut">${ns} × ${r}${pv?' · last: '+pv.map(a=>a[0]+'×'+a[1]).join(', '):''}</div>`;
