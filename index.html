@@ -96,6 +96,13 @@ const ABS=[
 {1:['Kneeling cable crunch',3,'10–15'],3:['Reverse crunch (decline bench)',3,'10–15'],5:['Ab crunch machine',3,'10–15']},
 {1:['Standing cable crunch',3,'10–15'],3:['Weighted decline sit-up',3,'10–15'],5:['Kneeling cable crunch',3,'10–15']}
 ];
+// Extra shoulder work on back days: SHX[block][week][weekday] = list of [name, sets, reps]
+const SHX=[
+[{2:[['Dumbbell lateral raise',2,'12–20']],5:[['Dumbbell lateral raise',2,'12–20'],['Reverse pec deck',2,'12–15']]},
+ {2:[['Single-arm cable lateral raise',2,'12–20']],5:[['Single-arm cable lateral raise',2,'12–20'],['Face pull',2,'12–15']]}],
+[{2:[['Lean-away lateral raise',2,'12–20']],5:[['Lean-away lateral raise',2,'12–20'],['Cable rear-delt fly',2,'12–15']]},
+ {2:[['Cable lateral raise (across the body)',2,'12–20']],5:[['Cable lateral raise (across the body)',2,'12–20'],['Bent-over dumbbell rear raise',2,'12–15']]}]
+];
 // Small-muscle finisher, by block, then week of a 3-week cycle, then weekday (3 = Wed, 6 = Sat): [name, sets, reps]
 const FN=[[
 {3:['Side-lying dumbbell external rotation',3,'12–15'],6:['Cable hip abduction (ankle strap)',3,'12–15']},
@@ -136,7 +143,7 @@ function last(k){for(const x of Object.keys(D.logs).filter(x=>x<cur).sort().reve
 function rW(){
  const d=dt(cur).getDay(),w=wk(cur);
  if(!d)return'<h2>Rest day</h2><div class="card">Sunday is for eating and sleeping. Check the Food tab.</div>';
- const b=bl(cur),f=FN[b][cy(cur)][d],ab=ABS[b][d],[t,s0]=S[b][w][d-1],s=[s0,ab&&ab.join('|'),f&&f.join('|')].filter(Boolean).join(';'),lg=day().w||{};
+ const b=bl(cur),f=FN[b][cy(cur)][d],ab=ABS[b][d],[t,s0]=S[b][w][d-1],sx=(SHX[b][w][d]||[]).map(e=>e.join('|')),s=[s0,...sx,ab&&ab.join('|'),f&&f.join('|')].filter(Boolean).join(';'),lg=day().w||{};
  const old=Object.keys(D.logs).length&&Date.now()-D.bk>6048e5;
  let h=(old?`<div class="warn" data-a="bk">No backup in the last week. Tap to save one.</div>`:'')+`<h2>${t}</h2><div class="mut" style="margin:0 2px">Block ${b+1}, week ${md(wn(cur),6)+1} of 6 (${'AB'[w]}). Tap ✓ to log a set; empty fields use last time’s numbers. Tap “left?” to record how many reps you could still have done (0 = failure).</div>`;
  h+=blk('Warm-up (about 10 min)',WU[TY[d]],'w',1);
@@ -218,7 +225,7 @@ function startT(o){snd();T=Object.assign(o,{ph:'ready',t0:Date.now(),du:5,w:0});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&T){wake();tick()}});
 if(T){tm=setInterval(tick,250);tick()}
 // ---- Stats: weekly sets per muscle, weight trend, progress ----
-const TG={Chest:20,Back:20,Shoulders:17,Triceps:14,Biceps:14,Forearms:6,Abs:9,Quads:11,Hamstrings:9,Calves:10};
+const TG={Chest:20,Back:20,Shoulders:23,Triceps:14,Biceps:14,Forearms:6,Abs:9,Quads:11,Hamstrings:9,Calves:10};
 const grp=(n,d)=>/crunch|leg raise|sit-up|rollout/i.test(n)?'Abs':/calf/i.test(n)?'Calves':/shoulder press|lateral raise|rear|face pull|reverse pec deck/i.test(n)?'Shoulders':/back extension/i.test(n)?(d=='2'?'Back':'Hamstrings'):/leg curl|romanian|RDL/i.test(n)?'Hamstrings':/squat|leg press|lunge|step-up|leg extension/i.test(n)?'Quads':/extension|pushdown|skull|dip machine/i.test(n)?'Triceps':/wrist|reverse curl/i.test(n)?'Forearms':/curl/i.test(n)?'Biceps':/row|pulldown|pullover|shrug/i.test(n)?'Back':/press|fly|pec deck/i.test(n)?'Chest':null;
 function wsets(){const m=mon(cur),c={};for(let i=0;i<7;i++){const d=new Date(m);d.setDate(d.getDate()+i);const w=(D.logs[iso(d)]||{}).w||{};for(const k in w){const g=grp(k.split('|')[1],k[1]);if(g)c[g]=(c[g]||0)+w[k].filter(s=>s&&s[2]).length}}return c}
 function wt(){const r={};for(const x in D.logs){const b=+D.logs[x].bw;if(b>0){const k=iso(mon(x));(r[k]=r[k]||[]).push(b)}}return Object.keys(r).sort().slice(-6).map(k=>({k,a:r[k].reduce((s,v)=>s+v,0)/r[k].length}))}
