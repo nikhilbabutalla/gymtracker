@@ -139,7 +139,7 @@ const wn=s=>Math.round((mon(s)-mon(D.start))/6048e5),md=(n,m)=>((n%m)+m)%m;
 const wk=s=>md(wn(s),2),bl=s=>md(Math.floor(wn(s)/6),2),cy=s=>md(wn(s),3);
 const day=()=>D.logs[cur]||{},L=()=>D.logs[cur]||(D.logs[cur]={w:{},f:{}});
 let cur=iso(new Date()),tab=location.hash=='#food'?'f':'w';
-function last(k){for(const x of Object.keys(D.logs).filter(x=>x<cur).sort().reverse()){const a=D.logs[x].w&&D.logs[x].w[k];if(a){const r=a.filter(s=>s&&s[2]).map(s=>[s[0],s[1],s[3]]);if(r.length)return r}}return null}
+function last(k){const d=k[1],n=k.split('|')[1];for(const x of Object.keys(D.logs).filter(x=>x<cur).sort().reverse()){const w=D.logs[x].w;if(!w)continue;for(const kk in w){if(kk[1]==d&&kk.split('|')[1]==n){const r=w[kk].filter(s=>s&&s[2]).map(s=>[s[0],s[1],s[3]]);if(r.length)return r}}}return null}
 function rW(){
  const d=dt(cur).getDay(),w=wk(cur);
  if(!d)return'<h2>Rest day</h2><div class="card">Sunday is for eating and sleeping. Check the Food tab.</div>';
