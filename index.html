@@ -139,6 +139,37 @@ svg.ch{display:block;width:100%;height:auto;touch-action:pan-y;user-select:none}
 .leg{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--mu);margin-top:8px}
 .leg i{display:inline-block;width:12px;height:12px;border-radius:2px}
 button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+/* Today, Plan, Settings */
+header h1{flex:1;text-align:center}
+#hg{color:var(--mu)}#hg.on{color:var(--ac)}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin:10px 2px 0}
+.wkl{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin:12px 0 2px}
+.wkb{height:64px;border-radius:8px;border:1px solid var(--ln);background:var(--cd);color:var(--mu);padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;font-family:var(--num);font-stretch:condensed;line-height:1.1}
+.wkb span{font-size:12px;font-weight:700;letter-spacing:.06em}
+.wkb b{font-size:22px;font-weight:800;color:var(--tx)}
+.wkb i{font-style:normal;font-size:12px;height:14px;font-weight:800}
+.wkb.part{border-color:var(--ac)}.wkb.part i{color:var(--ac)}
+.wkb.fin{background:var(--ac);border-color:var(--ac);color:var(--on)}.wkb.fin b{color:var(--on)}
+.wkb.rest{opacity:.55}
+.wkb.today span{color:var(--ac)}
+.wkb.sel{outline:2px solid var(--tx);outline-offset:1px}
+.xr{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--cd);border:1px solid var(--ln);border-radius:8px;padding:10px 12px;margin:6px 0;min-height:56px;font:inherit;color:inherit;box-shadow:inset 0 1px 0 #ffffff0d}
+.xr .xi{flex:none;min-width:30px;font-family:var(--num);font-stretch:condensed;font-size:15px;font-weight:800;color:var(--mu);text-transform:uppercase;letter-spacing:.05em}
+.xr .xm{flex:1;min-width:0}
+.xr .xm b{font-family:var(--num);font-stretch:condensed;font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:.02em;line-height:1.15}
+.xr.cur{border-color:var(--ac)}
+.xr.nxt{box-shadow:inset 3px 0 0 var(--ac)}.xr.nxt .xi{color:var(--ac)}
+.card.big{border:2px solid var(--ac);padding:11px}
+.big .hd>b{font-size:22px}
+.pr{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--ln)}
+.pr:first-child{border-top:0}
+.pr .xm{flex:1;min-width:0}.pr .xm b{font-family:var(--num);font-stretch:condensed;font-size:16px;font-weight:800;text-transform:uppercase}
+.tl{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px}
+.tw{height:48px;border-radius:6px;border:1px solid var(--ln);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--num);font-stretch:condensed;color:var(--mu);line-height:1.1}
+.tw b{font-size:18px;font-weight:800;color:var(--tx)}.tw span{font-size:11px;font-weight:700}
+.tw.past{background:var(--cd2)}
+.tw.now{background:var(--ac);border-color:var(--ac);color:var(--on)}.tw.now b{color:var(--on)}
+.tll{display:grid;grid-template-columns:1fr 1fr;margin-top:6px;font-size:11px;color:var(--mu);font-family:var(--num);font-stretch:condensed;letter-spacing:.08em;text-transform:uppercase;font-weight:700}
 /* Feels native on a phone: instant press feedback, no tap delay, no text selection on buttons, no pull-to-refresh while scrolling */
 html{overscroll-behavior-y:contain}
 button,summary,[data-a],label.btn{touch-action:manipulation}
@@ -148,10 +179,10 @@ button:active{transform:scale(.97)}
 .k2{grid-template-columns:repeat(2,minmax(0,1fr))!important}
 @media (prefers-reduced-motion:reduce){.an .trk i,.an .mini i{animation:none}button{transition:none}button:active{transform:none}}
 </style></head><body>
-<header><button data-a="pv" aria-label="Previous day">‹</button><h1 id="dt"></h1><button data-a="nx" aria-label="Next day">›</button></header>
+<header><button data-a="pv" id="hp" aria-label="Previous day">‹</button><h1 id="dt"></h1><button data-a="nx" id="hn" aria-label="Next day">›</button><button data-a="tab" data-t="b" id="hg" aria-label="Settings"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h9M19 7h1M4 17h1M11 17h9"/><circle cx="16" cy="7" r="2.4"/><circle cx="8" cy="17" r="2.4"/></svg></button></header>
 <main id="v"></main>
 <div id="tp" hidden></div>
-<nav><button data-a="tab" data-t="w">Workout</button><button data-a="tab" data-t="f">Food</button><button data-a="tab" data-t="s">Stats</button><button data-a="tab" data-t="b">Backup</button></nav>
+<nav><button data-a="tab" data-t="w">Today</button><button data-a="tab" data-t="p">Plan</button><button data-a="tab" data-t="f">Food</button><button data-a="tab" data-t="s">Stats</button></nav>
 <script>
 const S1=[[
 ["Chest + triceps · heavy","Barbell bench press|3|6–8;Incline dumbbell press|3|8–10;Incline dumbbell fly|2|10–12;Cable crossover fly (low to high)|2|10–12;Overhead dumbbell extension|3|8–10;Lying dumbbell skull-crusher|2|10–12;Seated dip machine|2|8–10"],
@@ -251,28 +282,103 @@ function planDay(s){const d=dt(s).getDay();if(!d)return null;const w=wk(s),b=bl(
  return{t,d,list}}
 const segs=(d,t)=>Array.from({length:t},(_,i)=>`<i${i<d?' class="on"':''}></i>`).join('');
 const cnt=(lg,k,ns)=>(lg[k]||[]).filter((q,j)=>q&&q[2]&&j<+ns).length;
-// Refresh the session meter and the set tags in place after a set is ticked (a full render would reset scroll and open sections)
-function pg(){const p=planDay(cur);if(!p||!$('#pgb'))return;const w=wk(cur),lg=day().w||{},tags=[...document.querySelectorAll('[data-tg]')];let tot=0,dn2=0;
- p.list.split(';').forEach(x=>{const[n,ns]=x.split('|'),k=w+''+p.d+'|'+n,c=cnt(lg,k,ns),el=tags.find(e=>e.dataset.tg===k);tot+=+ns;dn2+=c;
-  if(el){el.className='tag '+(c>=+ns?'ok':'nb');el.innerHTML=(c>=+ns?ic('check'):'')+c+'/'+ns}});
+// ---- Today: overview -> focus session -> finish summary ----
+let foc=null; // exercise the user jumped to; otherwise the first unfinished one
+// The day's exercises as objects; k is the key the sets are logged under
+const exs=s=>{s=s||cur;const p=planDay(s);if(!p)return[];const w=wk(s);return p.list.split(';').map(x=>{const[n,ns,r]=x.split('|');return{n,ns:+ns,r,k:w+''+p.d+'|'+n}})};
+const tagH=(k,c,ns)=>`<span class="tag ${c>=ns?'ok':'nb'}" data-tg="${k}">${c>=ns?ic('check'):''}${c}/${ns}</span>`;
+// Refresh the session meter and set tags in place after a set is ticked (a full render would reset scroll and open sections)
+function pg(){const es=exs();if(!es.length||!$('#pgb'))return;const lg=day().w||{},tags=[...document.querySelectorAll('[data-tg]')];let tot=0,dn2=0;
+ es.forEach(e=>{const c=cnt(lg,e.k,e.ns);tot+=e.ns;dn2+=c;tags.filter(t=>t.dataset.tg===e.k).forEach(el=>{el.className='tag '+(c>=e.ns?'ok':'nb');el.innerHTML=(c>=e.ns?ic('check'):'')+c+'/'+e.ns})});
  $('#pgb').textContent=dn2+' / '+tot+' sets';$('#pgp').textContent=(tot?Math.round(dn2/tot*100):0)+'% done';$('#pgs').innerHTML=segs(dn2,tot);$('#pgs').setAttribute('aria-label',dn2+' of '+tot+' sets done')}
-function rW(){
- const d=dt(cur).getDay(),w=wk(cur);
- if(!d)return'<h2>Rest day</h2><div class="card">Sunday is for eating and sleeping. Check the Food tab.</div>';
- const b=bl(cur),{t,list:s}=planDay(cur),lg=day().w||{};
- const old=Object.keys(D.logs).length&&Date.now()-D.bk>6048e5;
- let h=(old?`<div class="warn" data-a="bk">No backup in the last week. Tap to save one.</div>`:'')+`<h2>${t}</h2><div class="mut" style="margin:0 2px">Block ${b+1}, week ${md(wn(cur),6)+1} of 6 (${'AB'[w]}). Tap ✓ to log a set; empty fields use last time’s numbers. Tap “left?” to record how many reps you could still have done (0 = failure).</div>`;
- let tot=0,dn2=0;s.split(';').forEach(x=>{const[n,ns]=x.split('|');tot+=+ns;dn2+=cnt(lg,w+''+d+'|'+n,ns)});
- h+=`<div class="card"><div class="hd"><b id="pgb">${dn2} / ${tot} sets</b><span class="mut" id="pgp">${tot?Math.round(dn2/tot*100):0}% done</span></div><div class="segs" id="pgs" role="img" aria-label="${dn2} of ${tot} sets done">${segs(dn2,tot)}</div></div>`;
- h+=D.sr?`<button class="warn" data-a="sr" style="display:block;width:100%;text-align:left;font:inherit;color:inherit">Shoulder rest is on, so shoulder-loading work is hidden. Bench and incline presses still load the shoulder; go light or skip them if they hurt. Tap to turn it off.</button>`:`<button class="go" data-a="sr" style="margin:8px 2px 0">Shoulder rest mode</button>`;
- h+=blk('Warm-up (about 10 min)',WU[TY[d]],'w',1);
- s.split(';').forEach(x=>{const [n,ns,r]=x.split('|'),k=w+''+d+'|'+n,got=lg[k]||[],pv=last(k),dc=cnt(lg,k,ns);
-  h+=`<div class="card${T&&T.k==k?' act':''}"><div class="hd"><b>${n}</b><span><button class="go" data-a="nt" data-n="${n}" aria-label="Note">📝</button> <button class="go" data-a="go" data-k="${k}" data-n="${n}" data-s="${ns}" data-r="${r}">▶ Start</button></span></div><div class="mut" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span class="tag ${dc>=+ns?'ok':'nb'}" data-tg="${k}">${dc>=+ns?ic('check'):''}${dc}/${ns}</span><span>${ns} × ${r}${pv?' · last: '+pv.map(a=>a[0]+'×'+a[1]).join(', '):''}</span></div>${sugg(pv,r)}${noteH(n)}`;
-  for(let j=0;j<+ns;j++){const g=got[j]||[],p=pv?(pv[j]||pv[pv.length-1]):[];
-   h+=`<div class="set"><span>${j+1}</span><input type="number" inputmode="decimal" step="2.5" aria-label="kg" placeholder="${p[0]??'kg'}" value="${g[0]??''}" data-k="${k}" data-j="${j}" data-f="0"><input type="number" inputmode="numeric" aria-label="reps" placeholder="${p[1]??'reps'}" value="${g[1]??''}" data-k="${k}" data-j="${j}" data-f="1"><button class="lf${g[3]===''||g[3]==null?'':' on'}" data-a="lf" data-k="${k}" data-j="${j}" aria-label="Reps left">${lfT(g[3])}</button><button class="ck${g[2]?' on':''}" data-a="ck" data-k="${k}" data-j="${j}" aria-label="Done">✓</button></div>`}
-  h+='</div>'});
- h+=blk('Stretches after training (30 s each, 2 rounds)',ST[TY[d]],'s',0);
+const est=es=>{let s=0;es.forEach(e=>{s+=e.ns*(sd(e.r)+rf(e.n,e.r))});return Math.max(5,Math.round((s/60+15)/5)*5)};
+function muTags(es,d){const c={};es.forEach(e=>{const g=grp(e.n,''+d);if(g)c[g]=(c[g]||0)+e.ns});return Object.keys(c).sort((a,b)=>c[b]-c[a]).map(g=>`<span class="tag nb">${g} ${c[g]}</span>`).join('')}
+const head=()=>`<h2>${planDay(cur).t}</h2><div class="mut" style="margin:0 2px">Block ${bl(cur)+1} · week ${md(wn(cur),6)+1} of 6 (${'AB'[wk(cur)]})</div>`;
+const srCtl=()=>D.sr?`<button class="warn" data-a="sr" style="display:block;width:100%;text-align:left;font:inherit;color:inherit">Shoulder rest is on, so shoulder-loading work is hidden. Bench and incline presses still load the shoulder; go light or skip them if they hurt. Tap to turn it off.</button>`:'';
+// Mon-Sun strip: tap a day to open it
+function wStrip(){const m0=iso(mon(cur)),today=iso(new Date());let h='<div class="wkl" role="group" aria-label="Week">';
+ for(let i=0;i<7;i++){const x=addD(m0,i),p=planDay(x),lg=D.logs[x]||{},ds=dSets(x);
+  const st=lg.se?'fin':ds>0?'part':!p?'rest':'';
+  h+=`<button class="wkb ${st}${x==today?' today':''}${x==cur?' sel':''}" data-a="wd" data-d="${x}" aria-label="${fd(x)}: ${lg.se?'finished':ds>0?ds+' sets logged':!p?'rest day':'planned'}"><span>${fd(x,{weekday:'short'}).slice(0,1)}</span><b>${dt(x).getDate()}</b><i>${lg.se?'✓':ds>0?'•':!p?'–':''}</i></button>`}
+ return h+'</div>'}
+function nextSess(){for(let i=1;i<=7;i++){const x=addD(cur,i),p=planDay(x);if(p)return`<button class="xr" data-a="wd" data-d="${x}"><span class="xi">${fd(x,{weekday:'short'}).slice(0,3)}</span><div class="xm"><b>Next: ${p.t}</b><div class="mut">${fd(x)}</div></div></button>`}return''}
+// One exercise with its set rows
+function exCard(e,lg,big){const{n,ns,r,k}=e,got=lg[k]||[],pv=last(k),dc=cnt(lg,k,ns);
+ let h=`<div class="card${big?' big':''}${T&&T.k==k?' act':''}"><div class="hd"><b>${n}</b><span><button class="go" data-a="nt" data-n="${n}" aria-label="Note">📝</button> <button class="go" data-a="go" data-k="${k}" data-n="${n}" data-s="${ns}" data-r="${r}">▶ Start</button></span></div><div class="mut" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">${tagH(k,dc,ns)}<span>${ns} × ${r}${pv?' · last: '+pv.map(a=>a[0]+'×'+a[1]).join(', '):''}</span></div>${sugg(pv,r)}${noteH(n)}`;
+ for(let j=0;j<ns;j++){const g=got[j]||[],p=pv?(pv[j]||pv[pv.length-1]):[];
+  h+=`<div class="set"><span>${j+1}</span><input type="number" inputmode="decimal" step="2.5" aria-label="kg" placeholder="${p[0]??'kg'}" value="${g[0]??''}" data-k="${k}" data-j="${j}" data-f="0"><input type="number" inputmode="numeric" aria-label="reps" placeholder="${p[1]??'reps'}" value="${g[1]??''}" data-k="${k}" data-j="${j}" data-f="1"><button class="lf${g[3]===''||g[3]==null?'':' on'}" data-a="lf" data-k="${k}" data-j="${j}" aria-label="Reps left">${lfT(g[3])}</button><button class="ck${g[2]?' on':''}" data-a="ck" data-k="${k}" data-j="${j}" aria-label="Done">✓</button></div>`}
+ return h+'</div>'}
+const xrow=(e,lg,cur_)=>{const c=cnt(lg,e.k,e.ns);return`<button class="xr${cur_?' cur':''}" data-a="foc" data-k="${e.k}"><div class="xm"><b>${e.n}</b><div class="mut">${e.ns} × ${e.r}</div></div>${tagH(e.k,c,e.ns)}</button>`};
+const kp=(l,v,u)=>`<div class="kpi"><div class="l">${l}</div><div class="v">${v}<small>${u?' '+u:''}</small></div></div>`;
+
+function wOver(es,d){
+ const old=Object.keys(D.logs).length&&Date.now()-D.bk>6048e5,tot=es.reduce((s,e)=>s+e.ns,0),lg=day().w||{};
+ let h=(old?`<div class="warn" data-a="bk">No backup in the last week. Tap to save one.</div>`:'')+wStrip()+head();
+ h+=`<div class="kpis">${kp('Exercises',es.length)}${kp('Sets',tot)}${kp('Time','~'+est(es),'min')}</div><div class="tags">${muTags(es,d)}</div>`;
+ h+=srCtl()+`<button class="btn" data-a="ss">Start session</button>`;
+ if(!D.sr)h+=`<button class="go" data-a="sr" style="margin:10px 2px 0">Shoulder rest mode</button>`;
+ h+='<h2>Exercises</h2>';
+ es.forEach((e,i)=>{const pv=last(e.k);h+=`<div class="xr"><span class="xi">${i+1}</span><div class="xm"><b>${e.n}</b><div class="mut">${e.ns} × ${e.r}${pv?' · last '+pv.map(a=>a[0]+'×'+a[1]).join(', '):''}</div></div></div>`});
  return h}
+
+function wSession(es,lg,d){
+ let tot=0,dn2=0;es.forEach(e=>{tot+=e.ns;dn2+=cnt(lg,e.k,e.ns)});
+ const comp=e=>cnt(lg,e.k,e.ns)>=e.ns;if(foc&&!es.find(e=>e.k==foc))foc=null;
+ const cu=es.find(e=>e.k==foc)||es.find(e=>!comp(e))||null;
+ let h=wStrip()+head();
+ h+=`<div class="card"><div class="hd"><b id="pgb">${dn2} / ${tot} sets</b><span class="mut" id="pgp">${tot?Math.round(dn2/tot*100):0}% done</span></div><div class="segs" id="pgs" role="img" aria-label="${dn2} of ${tot} sets done">${segs(dn2,tot)}</div></div>`;
+ h+=srCtl();
+ h+=blk('Warm-up (about 10 min)',WU[TY[d]],'w',dn2==0?1:0);
+ if(cu){const i=es.indexOf(cu);
+  h+=`<div class="mut" style="margin:12px 2px 0">Exercise ${i+1} of ${es.length}. Tap ✓ to log a set; empty fields use last time’s numbers.</div>`+exCard(cu,lg,true);
+  const nx=[...es.slice(i+1),...es.slice(0,i)].filter(e=>!comp(e)).slice(0,2);
+  h+=nx.map(e=>`<button class="xr nxt" data-a="foc" data-k="${e.k}"><span class="xi">Next</span><div class="xm"><b>${e.n}</b><div class="mut">${e.ns} × ${e.r}</div></div></button>`).join('')}
+ else h+=`<div class="card big"><div class="hd"><b>All sets done</b></div><div class="mut">Nice work. Finish to see your session summary.</div><button class="btn" data-a="fin">Finish session</button></div>`;
+ h+='<h2>All exercises</h2>'+es.map(e=>xrow(e,lg,cu&&e.k==cu.k)).join('');
+ if(cu)h+=`<button class="go" data-a="fin" style="width:100%;height:44px;margin-top:10px">Finish session early</button>`;
+ return h}
+
+function sessStats(es,lg){let vol=0,sets=0;const prs_=[];
+ es.forEach(e=>{let top=null;(lg[e.k]||[]).forEach(s=>{if(!s||!s[2])return;sets++;const kg=parseFloat(s[0]),rp=parseFloat(s[1]);if(kg>0&&rp>0){vol+=kg*rp;const v=kg*(1+rp/30);if(!top||v>top.e)top={kg,rp,e:v}}});
+  if(!top)return;let prev=0;
+  for(const x in D.logs){if(x>=cur)continue;const w=D.logs[x].w||{};for(const k in w){if(k.split('|')[1]!==e.n)continue;w[k].forEach(s=>{if(!s||!s[2])return;const kg=parseFloat(s[0]),rp=parseFloat(s[1]);if(kg>0&&rp>0)prev=Math.max(prev,kg*(1+rp/30))})}}
+  if(prev>0&&top.e>prev+.05)prs_.push({n:e.n,top,gain:top.e-prev})});
+ return{vol,sets,prs:prs_}}
+function wDone(es,lg,lg0,d){
+ const s=sessStats(es,lg),mins=lg0.ss?Math.max(1,Math.round((lg0.se-lg0.ss)/6e4)):null;
+ let h=wStrip()+head()+`<div class="kpis">${kp('Time',mins==null?'–':mins,mins==null?'':'min')}${kp('Sets',s.sets)}${kp('Volume',Math.round(s.vol).toLocaleString(),'kg')}</div><div class="tags">${muTags(es,d)}</div>`;
+ h+='<h2>Personal bests</h2><div class="card">';
+ h+=s.prs.length?s.prs.map(p=>`<div class="pr"><span class="tag ok">${ic('up')}PR</span><div class="xm"><b>${p.n}</b><div class="mut">${p.top.kg} × ${p.top.rp} · est. 1RM ${Math.round(p.top.e)} kg (+${p.gain.toFixed(1)})</div></div></div>`).join(''):'<div class="empty">No new bests this time. Beating last session’s reps at the same weight still counts as progress.</div>';
+ h+='</div>'+blk('Stretches after training (30 s each, 2 rounds)',ST[TY[d]],'s',1);
+ return h+`<button class="go" data-a="reo" style="margin:12px 2px 0">Reopen session</button>`}
+
+function rW(){
+ const d=dt(cur).getDay(),lg0=D.logs[cur]||{},lg=lg0.w||{},es=exs();
+ if(!d)return wStrip()+'<h2>Rest day</h2><div class="card">Sunday is for eating and sleeping. Check the Food tab.</div>'+nextSess();
+ return lg0.se?wDone(es,lg,lg0,d):(lg0.ss||dSets(cur)>0)?wSession(es,lg,d):wOver(es,d)}
+function autoRest(k,j){if(D.auto===false)return;const e=exs().find(x=>x.k==k);if(!e)return;if(T&&!T.auto&&T.k==k)return;
+ if(j+1>=e.ns){if(T&&T.k==k)stopT();return}
+ snd();T={k,n:e.n,ns:e.ns,r:e.r,si:j+1,ph:'rest',t0:Date.now(),du:rf(e.n,e.r),w:0,auto:1};svT();wake();clearInterval(tm);tm=setInterval(tick,250);tick()}
+
+// ---- Plan: where you are in the 12-week cycle and this week's days ----
+function rP(){
+ const n=wn(cur),m0=iso(mon(cur)),today=iso(new Date()),pos=md(n,12),inB=pos%6,toNext=6-inB;
+ let h=`<h2>Training plan</h2><div class="mut" style="margin:0 2px">Week ${n+1} overall. Block ${pos<6?1:2}, week ${inB+1} of 6 (${'AB'[md(n,2)]}).</div><div class="card"><div class="tl">`;
+ h+=Array.from({length:12},(_,i)=>`<div class="tw ${i<pos?'past':i==pos?'now':''}" role="img" aria-label="Week ${i+1}${i==pos?', current':''}"><b>${i+1}</b><span>${'AB'[i%2]}</span></div>`).join('')+'</div>';
+ h+=`<div class="tll"><span>Block 1</span><span>Block 2</span></div><div class="mut" style="margin-top:10px">Next week is week ${'AB'[md(n+1,2)]}. ${md(n+1,2)?'Week B leans on barbells, machines and cables.':'Week A leans on dumbbells and free weights.'} Block ${pos<6?2:1} starts ${fd(addD(m0,7*toNext))}. Each new block swaps every accessory for an equivalent and keeps the anchor lifts.</div></div>`;
+ h+='<h2>This week</h2>';
+ for(let i=0;i<7;i++){const x=addD(m0,i),p=planDay(x),lg=D.logs[x]||{},ds=dSets(x),pt=p?exs(x).reduce((s,e)=>s+e.ns,0):0;
+  const[c,ico,l]=!p?['nb','flat','Rest']:x<D.start?['nb','flat','Before start']:lg.se?['ok','check','Done']:ds>0?['pace','pace',ds+'/'+pt]:x<today?['wn','alert','Missed']:x==today?['pace','pace','Today']:['nb','clock','Upcoming'];
+  h+=`<button class="xr${x==cur?' cur':''}" data-a="wd" data-d="${x}"><span class="xi">${fd(x,{weekday:'short'}).slice(0,3)}</span><div class="xm"><b>${p?p.t:'Rest day'}</b><div class="mut">${fds(x)}${p?' · '+pt+' sets':''}</div></div><span class="tag ${c}">${ic(ico)}${l}</span></button>`}
+ return h}
+
+// ---- Settings (backup, training options, timer) ----
+const sw=(label,on,a)=>`<div class="row"><span>${label}</span><button class="go" role="switch" aria-checked="${on}" data-a="${a}">${on?'On':'Off'}</button></div>`;
+function rB(){
+ const n=Object.keys(D.logs).length;
+ return`<h2>Backup</h2><div class="card"><p style="margin:0">${n} days logged. Last backup: ${D.bk?new Date(D.bk).toLocaleDateString():'never'}.</p><button class="btn" data-a="exp">Save backup file</button><p class="mut">Keep the file on Drive or send it to yourself. On a new phone, install the app and restore it here.</p><label class="btn" style="background:var(--cd2);color:var(--tx)">Restore from backup file<input id="imp" type="file" accept=".json,application/json" hidden></label></div>`
+ +`<h2>Training</h2>${sw('Start the rest timer when I tick a set',D.auto!==false,'aut')}${sw('Shoulder rest mode (hides shoulder-loading work)',!!D.sr,'sr')}<div class="card"><label>Week 1 started on (a Monday)<input id="st" type="date" value="${D.start}"></label></div>`
+ +`<h2>Timer cues</h2><div class="card"><div class="mut">Start some music, then tap to hear set start, set end, rest warning and finish over it.</div><button class="btn" data-a="tst">Play all cues</button></div>`}
 function rF(){
  const f=day().f||{};let k=0,p=0,kt=0,pt=0;
  const rows=F.map(x=>{const q=f[x[0]]||0;k+=q*x[5];p+=q*x[6];kt+=x[3]*x[5];pt+=x[3]*x[6];
@@ -283,13 +389,13 @@ function rF(){
   +`<div class="kpis k2">${tile('Calories (kcal)',k,kt)}${tile('Protein (g)',p,pt)}</div><div class="mut" style="margin:6px 2px 0">Targets are your usual day. Estimates from standard values, about ±10%.</div>`
   +`<div class="card"><label>Body weight today (kg)<input id="bw" type="number" inputmode="decimal" step="0.1" value="${day().bw??''}"></label><div class="mut" style="margin-top:6px">7-day average: ${av} kg</div></div>`
   +`<button class="go" data-a="fall" style="width:100%;height:44px;margin:4px 0 2px">Mark the rest as usual</button>`+rows}
-function rB(){
- const n=Object.keys(D.logs).length;
- return`<h2>Backup</h2><div class="card"><p style="margin:0">${n} days logged. Last backup: ${D.bk?new Date(D.bk).toLocaleDateString():'never'}.</p><button class="btn" data-a="exp">Save backup file</button><p class="mut">Keep the file on Drive or send it to yourself. On a new phone, install the app and restore it here.</p><label class="btn" style="background:var(--ti);color:var(--tx)">Restore from backup file<input id="imp" type="file" accept=".json,application/json" hidden></label></div><div class="card"><label>Week 1 started on (a Monday)<input id="st" type="date" value="${D.start}"></label></div><div class="card"><b>Timer cues</b><div class="mut">Start some music, then tap to hear set start, set end, rest warning and finish over it.</div><button class="btn" data-a="tst">Play all cues</button></div>`}
 function render(){
- $('#dt').textContent=(cur==iso(new Date())?'Today · ':'')+dt(cur).toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'});
+ const dayTab=tab=='w'||tab=='f';
+ $('#dt').textContent=dayTab?(cur==iso(new Date())?'Today · ':'')+dt(cur).toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'}):{p:'Plan',s:'Stats',b:'Settings'}[tab];
+ $('#hp').style.visibility=$('#hn').style.visibility=dayTab?'visible':'hidden';
+ $('#hg').classList.toggle('on',tab=='b');
  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t==tab));
- $('#v').innerHTML=tab=='w'?rW():tab=='f'?rF():tab=='s'?rS():rB()}
+ $('#v').innerHTML=tab=='w'?rW():tab=='f'?rF():tab=='p'?rP():tab=='s'?rS():rB()}
 function imp(f){if(!f)return;f.text().then(s=>{try{const n=JSON.parse(s);if(!n.logs)throw 0;if(confirm('Replace the data on this phone with this backup ('+Object.keys(n.logs).length+' days)?')){D=n;save();render()}}catch(e){alert('That file isn’t a Gym Tracker backup.')}})}
 document.addEventListener('change',e=>{const t=e.target;
  if(t.dataset.k!=null){const a=L().w[t.dataset.k]||(L().w[t.dataset.k]=[]),r=a[+t.dataset.j]||(a[+t.dataset.j]=['','',0]);r[+t.dataset.f]=t.value;save()}
@@ -300,9 +406,11 @@ document.addEventListener('change',e=>{const t=e.target;
 document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t)return;const a=t.dataset.a;
  if(a=='ck'){const i=t.parentElement.querySelectorAll('input'),kg=i[0].value||i[0].placeholder,rp=i[1].value||i[1].placeholder,ar=L().w[t.dataset.k]||(L().w[t.dataset.k]=[]),r=ar[+t.dataset.j]||(ar[+t.dataset.j]=['','',0]);
   if(r[2])r[2]=0;else{if(isNaN(parseFloat(kg))||isNaN(parseFloat(rp))){i[isNaN(parseFloat(kg))?0:1].focus();return}r[0]=kg;r[1]=rp;r[2]=1}
-  i[0].value=r[0];i[1].value=r[1];t.classList.toggle('on',!!r[2]);save();pg()}
+  i[0].value=r[0];i[1].value=r[1];t.classList.toggle('on',!!r[2]);save();
+  if(r[2])autoRest(t.dataset.k,+t.dataset.j);pg();
+  const ex=exs().find(x=>x.k==t.dataset.k);if(r[2]&&ex&&cnt(L().w,ex.k,ex.ns)>=ex.ns){foc=null;render();scrollTo(0,0)}}
  else if(a=='ft'||a=='fm'||a=='fp'){const f=F.find(x=>x[0]==t.dataset.i),m=L().f,q=m[f[0]]||0;m[f[0]]=a=='ft'?(q>0?0:f[3]):Math.max(0,+(q+(a=='fp'?f[4]:-f[4])).toFixed(2));save();render()}
- else if(a=='pv'||a=='nx'){const d=dt(cur);d.setDate(d.getDate()+(a=='nx'?1:-1));cur=iso(d);render()}
+ else if(a=='pv'||a=='nx'){const d=dt(cur);d.setDate(d.getDate()+(a=='nx'?1:-1));cur=iso(d);foc=null;render()}
  else if(a=='tab'){tab=t.dataset.t;stAn=true;render();scrollTo(0,0)}
  else if(a=='lf'){const ar=L().w[t.dataset.k]||(L().w[t.dataset.k]=[]),r=ar[+t.dataset.j]||(ar[+t.dataset.j]=['','',0]),c=r[3];r[3]=(c===''||c==null)?0:c>=3?'':c+1;t.textContent=lfT(r[3]);t.classList.toggle('on',r[3]!==''&&r[3]!=null);save()}
  else if(a=='nt'){const n=t.dataset.n;D.notes=D.notes||{};const v=prompt('Note for '+n+' (leave empty to delete)',D.notes[n]||'');if(v!==null){if(v.trim())D.notes[n]=v.trim();else delete D.notes[n];save();render()}}
@@ -314,6 +422,12 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t
  else if(a=='tst'){snd();[['start',0],['end',1200],['warn',2400],['done',3800]].forEach(([c,d])=>setTimeout(()=>tone(CUE[c]),d))}
  else if(a=='bk'){tab='b';render()}
  else if(a=='sr'){D.sr=!D.sr;save();render()}
+ else if(a=='aut'){D.auto=D.auto===false;save();render()}
+ else if(a=='ss'){L().ss=Date.now();foc=null;save();render();scrollTo(0,0)}
+ else if(a=='fin'){L().se=Date.now();if(T)stopT();save();render();scrollTo(0,0)}
+ else if(a=='reo'){delete L().se;save();render()}
+ else if(a=='foc'){foc=t.dataset.k;render();scrollTo(0,0)}
+ else if(a=='wd'){cur=t.dataset.d;tab='w';foc=null;render();scrollTo(0,0)}
  else if(a=='fall'){const m=L().f;F.forEach(x=>{if(!m[x[0]])m[x[0]]=x[3]});save();render()}
  else if(a=='sst'){sst=t.dataset.s;stAn=true;render()}
  else if(a=='smu'){sMu=sMu==t.dataset.n?null:t.dataset.n;render()}
@@ -339,6 +453,7 @@ const rf=(n,r)=>{const lo=parseInt(String(r).split('–')[0])||10;let x=lo<=8?15
 function adv(late){const p=T.du;
  if(T.ph=='ready'){T.ph='set';T.du=sd(T.r);if(!late)tone(CUE.start)}
  else if(T.ph=='set'){if(T.si+1>=T.ns){if(!late)tone(CUE.done);stopT();return}T.ph='rest';T.du=rf(T.n,T.r);T.w=0;if(!late)tone(CUE.end)}
+ else if(T.auto){if(!late)tone(CUE.start);stopT();return}
  else{T.si++;T.ph='set';T.du=sd(T.r);if(!late)tone(CUE.start)}
  T.t0+=p*1000}
 function stopT(){T=null;svT();unwake();clearInterval(tm);tm=null;draw();if(tab=='w')render()}
