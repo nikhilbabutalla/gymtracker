@@ -93,8 +93,8 @@ const S2=[[
 const S=[S1,S2];
 // Abs block, by block then weekday (1 = Mon, 3 = Wed, 5 = Fri): [name, sets, reps]
 const ABS=[
-{1:['Kneeling cable crunch',3,'10–15'],3:['Reverse crunch (decline bench)',3,'10–15'],5:['Ab crunch machine',3,'10–15']},
-{1:['Standing cable crunch',3,'10–15'],3:['Weighted decline sit-up',3,'10–15'],5:['Kneeling cable crunch',3,'10–15']}
+{1:['Kneeling cable crunch',4,'10–15'],3:['Reverse crunch (decline bench)',3,'10–15'],5:['Ab crunch machine',3,'10–15']},
+{1:['Standing cable crunch',4,'10–15'],3:['Weighted decline sit-up',3,'10–15'],5:['Kneeling cable crunch',3,'10–15']}
 ];
 // Extra shoulder work on back days: SHX[block][week][weekday] = list of [name, sets, reps]
 const SHX=[
@@ -102,6 +102,14 @@ const SHX=[
  {2:[['Single-arm cable lateral raise',2,'12–20']],5:[['Single-arm cable lateral raise',2,'12–20'],['Face pull',2,'12–15']]}],
 [{2:[['Lean-away lateral raise',2,'12–20']],5:[['Lean-away lateral raise',2,'12–20'],['Cable rear-delt fly',2,'12–15']]},
  {2:[['Cable lateral raise (across the body)',2,'12–20']],5:[['Cable lateral raise (across the body)',2,'12–20'],['Bent-over dumbbell rear raise',2,'12–15']]}]
+];
+// Coverage extras: XT[block][week][weekday] = list of [name, sets, reps]
+// Tue traps, Wed hamstrings + glutes, Thu quads, Fri forearms
+const XT=[
+[{2:[['Smith shrug (pause at top)',3,'12–15']],3:[['Seated leg curl',3,'10–12'],['Barbell hip thrust',4,'8–12']],4:[['Leg extension (slow lowering)',2,'12–15']],5:[['Reverse curl (EZ-bar)',3,'10–12']]},
+ {2:[['Dumbbell shrug (pause at top)',3,'12–15']],3:[['Lying leg curl',3,'10–12'],['Smith hip thrust',4,'8–12']],4:[['Leg extension (slow lowering)',2,'12–15']],5:[['Reverse curl (dumbbell)',3,'10–12']]}],
+[{2:[['Barbell shrug (pause at top)',3,'12–15']],3:[['Lying leg curl',3,'10–12'],['Barbell hip thrust',4,'8–12']],4:[['Single-leg extension',2,'12–15']],5:[['Cable reverse curl',3,'10–12']]},
+ {2:[['Dumbbell shrug (pause at top)',3,'12–15']],3:[['Seated leg curl',3,'10–12'],['Smith hip thrust',4,'8–12']],4:[['Single-leg extension',2,'12–15']],5:[['Reverse curl (EZ-bar)',3,'10–12']]}]
 ];
 // Small-muscle finisher, by block, then week of a 3-week cycle, then weekday (3 = Wed, 6 = Sat): [name, sets, reps]
 const FN=[[
@@ -143,7 +151,7 @@ function last(k){const d=k[1],n=k.split('|')[1];for(const x of Object.keys(D.log
 function rW(){
  const d=dt(cur).getDay(),w=wk(cur);
  if(!d)return'<h2>Rest day</h2><div class="card">Sunday is for eating and sleeping. Check the Food tab.</div>';
- const b=bl(cur),f=FN[b][cy(cur)][d],ab=ABS[b][d],[t,s0]=S[b][w][d-1],sx=(SHX[b][w][d]||[]).map(e=>e.join('|')),s=[s0,...sx,ab&&ab.join('|'),f&&f.join('|')].filter(Boolean).join(';'),lg=day().w||{};
+ const b=bl(cur),f=FN[b][cy(cur)][d],ab=ABS[b][d],[t,s0]=S[b][w][d-1],sx=(SHX[b][w][d]||[]).map(e=>e.join('|')),xt=(XT[b][w][d]||[]).map(e=>e.join('|')),s=[s0,...sx,...xt,ab&&ab.join('|'),f&&f.join('|')].filter(Boolean).join(';'),lg=day().w||{};
  const old=Object.keys(D.logs).length&&Date.now()-D.bk>6048e5;
  let h=(old?`<div class="warn" data-a="bk">No backup in the last week. Tap to save one.</div>`:'')+`<h2>${t}</h2><div class="mut" style="margin:0 2px">Block ${b+1}, week ${md(wn(cur),6)+1} of 6 (${'AB'[w]}). Tap ✓ to log a set; empty fields use last time’s numbers. Tap “left?” to record how many reps you could still have done (0 = failure).</div>`;
  h+=blk('Warm-up (about 10 min)',WU[TY[d]],'w',1);
@@ -225,8 +233,8 @@ function startT(o){snd();T=Object.assign(o,{ph:'ready',t0:Date.now(),du:5,w:0});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&T){wake();tick()}});
 if(T){tm=setInterval(tick,250);tick()}
 // ---- Stats: weekly sets per muscle, weight trend, progress ----
-const TG={Chest:20,Back:20,Shoulders:23,Triceps:14,Biceps:14,Forearms:6,Abs:9,Quads:11,Hamstrings:9,Calves:10};
-const grp=(n,d)=>/crunch|leg raise|sit-up|rollout/i.test(n)?'Abs':/calf/i.test(n)?'Calves':/shoulder press|lateral raise|rear|face pull|reverse pec deck/i.test(n)?'Shoulders':/back extension/i.test(n)?(d=='2'?'Back':'Hamstrings'):/leg curl|romanian|RDL/i.test(n)?'Hamstrings':/squat|leg press|lunge|step-up|leg extension/i.test(n)?'Quads':/extension|pushdown|skull|dip machine/i.test(n)?'Triceps':/wrist|reverse curl/i.test(n)?'Forearms':/curl/i.test(n)?'Biceps':/row|pulldown|pullover|shrug/i.test(n)?'Back':/press|fly|pec deck/i.test(n)?'Chest':null;
+const TG={Chest:20,Back:18,Traps:5,Shoulders:23,Triceps:14,Biceps:14,Forearms:9,Abs:10,Quads:13,Hamstrings:12,Glutes:4,Calves:10};
+const grp=(n,d)=>/crunch|leg raise|sit-up|rollout/i.test(n)?'Abs':/calf/i.test(n)?'Calves':/hip thrust/i.test(n)?'Glutes':/shrug/i.test(n)?'Traps':/shoulder press|lateral raise|rear|face pull|reverse pec deck/i.test(n)?'Shoulders':/back extension/i.test(n)?(d=='2'?'Back':'Hamstrings'):/leg curl|romanian|RDL/i.test(n)?'Hamstrings':/squat|leg press|lunge|step-up|leg extension/i.test(n)?'Quads':/extension|pushdown|skull|dip machine/i.test(n)?'Triceps':/wrist|reverse curl/i.test(n)?'Forearms':/curl/i.test(n)?'Biceps':/row|pulldown|pullover|shrug/i.test(n)?'Back':/press|fly|pec deck/i.test(n)?'Chest':null;
 function wsets(){const m=mon(cur),c={};for(let i=0;i<7;i++){const d=new Date(m);d.setDate(d.getDate()+i);const w=(D.logs[iso(d)]||{}).w||{};for(const k in w){const g=grp(k.split('|')[1],k[1]);if(g)c[g]=(c[g]||0)+w[k].filter(s=>s&&s[2]).length}}return c}
 function wt(){const r={};for(const x in D.logs){const b=+D.logs[x].bw;if(b>0){const k=iso(mon(x));(r[k]=r[k]||[]).push(b)}}return Object.keys(r).sort().slice(-6).map(k=>({k,a:r[k].reduce((s,v)=>s+v,0)/r[k].length}))}
 function prs(){const m={};for(const x of Object.keys(D.logs).sort()){const w=D.logs[x].w||{};for(const k in w){const n=k.split('|')[1];let top=null;w[k].forEach(s=>{if(!s||!s[2])return;const kg=parseFloat(s[0]),rp=parseFloat(s[1]);if(!(kg>0&&rp>0))return;const e=kg*(1+rp/30);if(!top||e>top.e)top={kg,rp,e}});if(!top)continue;const o=m[n];if(!o)m[n]={n,best:top,bd:x,last:top,ld:x,cnt:1};else{o.cnt++;if(top.e>o.best.e){o.best=top;o.bd=x}o.last=top;o.ld=x}}}return Object.values(m).sort((a,b)=>b.ld.localeCompare(a.ld))}
