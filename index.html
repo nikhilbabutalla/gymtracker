@@ -5,7 +5,9 @@
 <meta name="color-scheme" content="dark">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.json">
-<link rel="icon" href="icon-192.png">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Gym Tracker</title>
 <style>
 /* PLATE RACK. Black rubber, steel edges, one safety-yellow accent. Dark only: it reads in a dim gym and yellow needs a dark ground.
@@ -572,7 +574,7 @@ const sw=(label,on,a)=>`<div class="row"><span>${label}</span><button class="go"
 function rB(){
  if(bsub=='prog')return rProg();if(bsub=='prev')return rPrev();
  const n=Object.keys(D.logs).length,P=PROG();
- return`<h2>Training program</h2><div class="card"><b>${esc(P.name)}</b><div class="mut">${P.weeks.length}-week rotation</div><button class="btn" data-a="bsb" data-s="prog">Change program</button></div><h2>Backup</h2><div class="card"><p style="margin:0">${n} ${n==1?"day":"days"} logged. Last backup: ${D.bk?new Date(D.bk).toLocaleDateString():'never'}.</p><button class="btn" data-a="exp">Save backup file</button><p class="mut">Keep the file on Drive or send it to yourself. On a new phone, install the app and restore it here.</p><label class="btn" style="background:var(--cd2);color:var(--tx)">Restore from backup file<input id="imp" type="file" accept=".json,application/json" hidden></label></div>`
+ return`<h2>Training program</h2><div class="card"><b>${esc(P.name)}</b><div class="mut">${P.weeks.length}-week rotation</div><button class="btn" data-a="bsb" data-s="prog">Change program</button></div>${standalone()?'':'<h2>Install</h2>'+instCard(false)}<h2>Backup</h2><div class="card"><p style="margin:0">${n} ${n==1?"day":"days"} logged. Last backup: ${D.bk?new Date(D.bk).toLocaleDateString():'never'}.</p><button class="btn" data-a="exp">Save backup file</button><p class="mut">Keep the file on Drive or send it to yourself. On a new phone, install the app and restore it here.</p><label class="btn" style="background:var(--cd2);color:var(--tx)">Restore from backup file<input id="imp" type="file" accept=".json,application/json" hidden></label></div>`
  +`<h2>Training</h2>${sw('Start the rest timer when I tick a set',D.auto!==false,'aut')}${sw('Shoulder rest mode (hides shoulder-loading work)',!!D.sr,'sr')}<div class="card"><b>Weight goal</b><div class="seg" role="radiogroup" aria-label="Goal">${[['gain','Gain'],['maintain','Maintain'],['lose','Lose']].map(([k,l])=>`<button role="radio" aria-checked="${goal()==k}" data-a="gl" data-v="${k}">${l}</button>`).join('')}</div><div class="mut" style="margin-top:8px">Sets the weekly weight target on the Body chart: ${bandTxt()}.</div></div><div class="card"><b>Weight unit</b><div class="seg c2" role="radiogroup" aria-label="Unit">${['kg','lb'].map(k=>`<button role="radio" aria-checked="${U()==k}" data-a="un" data-v="${k}">${k}</button>`).join('')}</div><div class="mut" style="margin-top:8px">Changing the unit only changes labels. Your logged numbers are not converted.</div></div><div class="card"><label>Week 1 started on (a Monday)<input id="st" type="date" value="${D.start}"></label></div>`
  +`<h2>Timer cues</h2><div class="card"><div class="mut">Start some music, then tap to hear set start, set end, rest warning and finish over it.</div><button class="btn" data-a="tst">Play all cues</button></div>`}
 let fsub=null,FE=null; // Food sub-screen: null, 'list' or 'form'
@@ -609,12 +611,21 @@ function saveFood(){const e=FE,name=clean($('#fn').value,40),m=$('#fmu').value,u
  const per=u[1],row=[id,name,u[0],q,per==100?(q>=200?50:10):.5,k/per,pr/per],i=arr.findIndex(x=>x[0]==id);if(i>=0)arr[i]=row;else arr.push(row);
  D.foods=arr;save();fsub='list';FE=null;render();scrollTo(0,0)}
 
+// "Add to home screen" help: shows the right steps for the phone, a real Install button when the browser offers one, nothing once installed
+let DIP=null;
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();DIP=e;if(fresh()||tab=='b')render()});
+addEventListener('appinstalled',()=>{DIP=null;render()});
+const standalone=()=>{try{return matchMedia('(display-mode: standalone)').matches||navigator.standalone===true}catch(e){return false}};
+const isIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent||'')||((navigator.platform||'')==='MacIntel'&&(navigator.maxTouchPoints||0)>1);
+function instCard(dismiss){if(standalone())return'';
+ const steps=isIOS()?'<b>1.</b> Open this page in <b>Safari</b>.<br><b>2.</b> Tap the <b>Share</b> button.<br><b>3.</b> Choose <b>Add to Home Screen</b>.':'<b>1.</b> Open the browser menu (<b>⋮</b> in Chrome).<br><b>2.</b> Tap <b>Install app</b> or <b>Add to Home screen</b>.';
+ return`<div class="card"><b>Put it on your home screen</b><div class="mut" style="margin-top:6px">It opens like an app, works offline and keeps your data on this phone. Save a backup now and then, because clearing the browser’s data erases it.</div>${DIP?`<button class="btn" data-a="inst">Install the app</button>`:`<div class="mut" style="margin-top:8px">${steps}</div>`}${dismiss?`<button class="go" data-a="ihide" style="margin-top:10px">Got it</button>`:''}</div>`}
 function rWelcome(){const g=goal(),u=U();
  return`<h2>Welcome</h2><div class="mut" style="margin:0 2px">Set up in a minute. Your data stays on this phone.</div>
  <h2>Your goal</h2><div class="seg" role="radiogroup" aria-label="Goal">${[['gain','Gain'],['maintain','Maintain'],['lose','Lose']].map(([k,l])=>`<button role="radio" aria-checked="${g==k}" data-a="wgl" data-v="${k}">${l}</button>`).join('')}</div>
  <h2>Weight unit</h2><div class="seg c2" role="radiogroup" aria-label="Unit">${['kg','lb'].map(k=>`<button role="radio" aria-checked="${u==k}" data-a="wun" data-v="${k}">${k}</button>`).join('')}</div>
  <h2>Your training</h2><button class="btn" data-a="wim">Import my routine</button><button class="btn alt" data-a="wim">Type it in</button><button class="go" data-a="wsm" style="width:100%;height:44px;margin-top:12px">Try the sample plan first</button>
- <div class="mut" style="margin:12px 2px 0">Moving from another phone? Open Settings (top right) and restore your backup.</div>`}
+ ${D.noinst||standalone()?'':'<h2>Install</h2>'+instCard(true)}<div class="mut" style="margin:12px 2px 0">Moving from another phone? Open Settings (top right) and restore your backup.</div>`}
 function render(){
  const fr=fresh()&&tab!='b',dayTab=(tab=='w'||tab=='f')&&!fr;
  $('#dt').textContent=fr?'Welcome':dayTab?(cur==iso(new Date())?'Today · ':'')+dt(cur).toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'}):{p:'Plan',s:'Stats',b:'Settings'}[tab];
@@ -653,6 +664,8 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t
  else if(a=='tst'){snd();[['start',0],['end',1200],['warn',2400],['done',3800]].forEach(([c,d])=>setTimeout(()=>tone(CUE[c]),d))}
  else if(a=='bk'){tab='b';render()}
  else if(a=='sr'){D.sr=!D.sr;save();render()}
+ else if(a=='inst'){if(DIP){const q=DIP;DIP=null;q.prompt();render()}}
+ else if(a=='ihide'){D.noinst=true;save();render()}
  else if(a=='wgl'){D.goal=t.dataset.v;save();render()}
  else if(a=='wun'){D.unit=t.dataset.v;save();render()}
  else if(a=='wim'){tab='b';bsub='prog';render();scrollTo(0,0)}

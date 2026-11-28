@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <title>Gym Tracker</title>
+  <rect width="512" height="512" fill="#0C0D0F"/>
+  <!-- weight plate seen face-on: rim, raised ring, check mark where the hub would be -->
+  <circle cx="256" cy="256" r="172" fill="#FFD60A"/>
+  <circle cx="256" cy="256" r="138" fill="none" stroke="#0C0D0F" stroke-width="9" opacity=".9"/>
+  <circle cx="256" cy="256" r="150" fill="none" stroke="#0C0D0F" stroke-width="3" opacity=".35"/>
+  <path d="M184 262 L234 312 L336 200" fill="none" stroke="#0C0D0F" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
