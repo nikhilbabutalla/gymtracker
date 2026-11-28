@@ -261,39 +261,65 @@ b:['Overhead lat stretch (hold a rack and sit back)','Wall biceps stretch','Chil
 s:['Cross-body shoulder stretch','Wrist flexor stretch (arm out, palm up)','Wrist extensor stretch (arm out, palm down)'],
 l:['Hip-flexor lunge stretch','Standing quad stretch','Seated hamstring stretch','Wall calf stretch','Figure-four glute stretch']};
 const TY={1:'c',2:'b',3:'s',4:'c',5:'b',6:'l'};
+WU.g=['Easy bike or incline walk, 4–5 min','Arm circles × 10','Hip circles × 10 per side','Bodyweight squats × 10','Cat–cow × 10',RU];
+ST.g=['Cross-body shoulder stretch','Hip-flexor lunge stretch','Child’s pose'];
 const K='gymtrk1',$=s=>document.querySelector(s);
 const blk=(t,a,g,o)=>{const c=(day().x||{})[g]||[];return`<details class="card"${o?' open':''}><summary><b>${t}</b></summary>`+a.map((x,i)=>`<label class="it"><input type="checkbox" data-g="${g}" data-i="${i}"${c[i]?' checked':''}><span>${x}</span></label>`).join('')+'</details>'};
 let D;try{D=JSON.parse(localStorage.getItem(K))}catch(e){}
 if(!D||!D.logs)D={start:'2026-11-16',logs:{},bk:0};
 const save=()=>{try{localStorage.setItem(K,JSON.stringify(D))}catch(e){alert('Could not save. Free some phone storage.')}};
+// Logs used to be keyed "<week><weekday>|name"; the key is now "<weekday>|name". Rewrite old keys in place (also used on backup restore).
+function migrateKeys(X){let n=0;for(const x in X.logs){const w=X.logs[x]&&X.logs[x].w;if(!w)continue;
+ for(const k of Object.keys(w)){const m=/^\d(\d)\|/.exec(k);if(!m)continue;const nk=m[1]+k.slice(2),dn=a=>(a||[]).filter(q=>q&&q[2]).length;
+  if(!w[nk]||dn(w[nk])<=dn(w[k]))w[nk]=w[k];delete w[k];n++}}return n}
+if(migrateKeys(D))save();
 const pad=n=>String(n).padStart(2,'0'),iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()),dt=s=>new Date(s+'T12:00:00');
 const mon=s=>{const x=dt(s);x.setDate(x.getDate()-(x.getDay()+6)%7);return x};
 const wn=s=>Math.round((mon(s)-mon(D.start))/6048e5),md=(n,m)=>((n%m)+m)%m;
-const wk=s=>md(wn(s),2),bl=s=>md(Math.floor(wn(s)/6),2),cy=s=>md(wn(s),3);
+// ---- Program model: a plan is a rotation of weeks; each week maps weekday (0=Sun..6=Sat) to a day {t,ty,ex:[{n,ns,r,m}]} ----
+const MUS=['Chest','Back','Traps','Shoulders','Triceps','Biceps','Forearms','Abs','Quads','Hamstrings','Glutes','Calves','Lower back','Adductors'];
+// Nikhil's plan (S1,S2,ABS,SHX,XT,FN above) repeats every 12 weeks, so it fits the generic model exactly
+function buildSample(){const weeks=[];
+ for(let i=0;i<12;i++){const w=i%2,b=Math.floor(i/6)%2,c=i%3,days={};
+  for(let d=1;d<=6;d++){const[t,s0]=S[b][w][d-1],ab=ABS[b][d],f=FN[b][c][d];
+   const raw=[s0,...(SHX[b][w][d]||[]).map(e=>e.join('|')),...(XT[b][w][d]||[]).map(e=>e.join('|')),ab&&ab.join('|'),f&&f.join('|')].filter(Boolean).join(';');
+   days[d]={t,ty:TY[d],ex:raw.split(';').map(x=>{const[n,ns,r]=x.split('|');return{n,ns:+ns,r,m:grp(n,''+d)||'Other'}})}}
+  weeks.push({label:'Block '+(b+1)+' · week '+(i%6+1)+' of 6 ('+'AB'[w]+')',tag:'AB'[w],days})}
+ return{name:'Sample plan',sample:true,weeks,anchors:[['Bench press','^Barbell bench press'],['Bent-over row','^Barbell bent-over row'],['Back squat','^Barbell back squat'],['Shoulder press (dumbbell)','^Seated dumbbell shoulder press'],['Lat pulldown','^Lat pulldown \\(neutral'],['Romanian deadlift','^Barbell Romanian deadlift']]}}
+let _sample=null;const sample=()=>_sample||(_sample=buildSample());
+const PROG=()=>D.program||sample(),rotN=()=>PROG().weeks.length,rotIdx=s=>md(wn(s),rotN());
+const wLabelAt=i=>{const P=PROG(),k=md(i,P.weeks.length),l=P.weeks[k].label;return l||(P.weeks.length>1?'Week '+(k+1)+' of '+P.weeks.length:'')},wLabel=s=>wLabelAt(rotIdx(s));
+// Muscle of a logged exercise key ("weekday|name"): the program's own tag first, then remembered tags from past programs, then a name guess
+let _mm=null,_mmP=null;
+function muOf(k){const P=PROG();if(_mmP!==P){_mmP=P;_mm={};P.weeks.forEach(w=>{for(const d in w.days)w.days[d].ex.forEach(e=>{_mm[d+'|'+e.n]=e.m})})}
+ const m=_mm[k]!==undefined?_mm[k]:(D.mmap&&D.mmap[k]!==undefined)?D.mmap[k]:(grp(k.slice(2),k[0])||'Other');return m==='Other'?null:m}
+// Day type (warm-up and stretch set) for a day without an explicit one: whichever muscle family has most sets
+function dayTy(day){const f={c:['Chest','Triceps'],b:['Back','Traps','Biceps'],s:['Shoulders','Forearms'],l:['Quads','Hamstrings','Glutes','Calves','Adductors','Lower back']},c={};let tot=0;
+ day.ex.forEach(e=>{tot+=e.ns;for(const t in f)if(f[t].includes(e.m))c[t]=(c[t]||0)+e.ns});
+ const best=Object.keys(c).sort((a,b)=>c[b]-c[a])[0];return best&&c[best]>=tot*.4?best:'g'}
 const day=()=>D.logs[cur]||{},L=()=>D.logs[cur]||(D.logs[cur]={w:{},f:{}});
 let cur=iso(new Date()),tab=location.hash=='#food'?'f':'w';
-function last(k){const d=k[1],n=k.split('|')[1];for(const x of Object.keys(D.logs).filter(x=>x<cur).sort().reverse()){const w=D.logs[x].w;if(!w)continue;for(const kk in w){if(kk[1]==d&&kk.split('|')[1]==n){const r=w[kk].filter(s=>s&&s[2]).map(s=>[s[0],s[1],s[3]]);if(r.length)return r}}}return null}
-// The day's full exercise list as "name|sets|reps;..." (null on Sunday). Shared by the Workout and Stats tabs.
+function last(k){const d=k[0],n=k.slice(2);for(const x of Object.keys(D.logs).filter(x=>x<cur).sort().reverse()){const w=D.logs[x].w;if(!w)continue;for(const kk in w){if(kk[0]==d&&kk.slice(2)==n){const r=w[kk].filter(s=>s&&s[2]).map(s=>[s[0],s[1],s[3]]);if(r.length)return r}}}return null}
+// The day's plan from the active program (null on a rest day). Shared by the Today, Plan and Stats tabs.
 // Shoulder rest mode hides anything that loads the shoulder joint: delt work, flyes, dips, overhead extensions and the cuff finishers.
 const SHR=/lateral raise|shoulder press|rear|face pull|reverse pec deck|pec deck|dip machine|fly|crossover|overhead|external rotation|Y raise|scaption|push-up plus/i;
-function planDay(s){const d=dt(s).getDay();if(!d)return null;const w=wk(s),b=bl(s),f=FN[b][cy(s)][d],ab=ABS[b][d],[t,s0]=S[b][w][d-1],sx=(SHX[b][w][d]||[]).map(e=>e.join('|')),xt=(XT[b][w][d]||[]).map(e=>e.join('|'));
- let list=[s0,...sx,...xt,ab&&ab.join('|'),f&&f.join('|')].filter(Boolean).join(';');
- if(D.sr)list=list.split(';').filter(e=>!SHR.test(e.split('|')[0])).join(';');
- return{t,d,list}}
+function planDay(s){const d=dt(s).getDay(),day=PROG().weeks[rotIdx(s)].days[d];if(!day||!day.ex.length)return null;
+ let ex=day.ex;if(D.sr)ex=ex.filter(e=>!SHR.test(e.n));
+ return ex.length?{t:day.t,d,ty:day.ty||dayTy(day),ex}:null}
 const segs=(d,t)=>Array.from({length:t},(_,i)=>`<i${i<d?' class="on"':''}></i>`).join('');
 const cnt=(lg,k,ns)=>(lg[k]||[]).filter((q,j)=>q&&q[2]&&j<+ns).length;
 // ---- Today: overview -> focus session -> finish summary ----
 let foc=null; // exercise the user jumped to; otherwise the first unfinished one
 // The day's exercises as objects; k is the key the sets are logged under
-const exs=s=>{s=s||cur;const p=planDay(s);if(!p)return[];const w=wk(s);return p.list.split(';').map(x=>{const[n,ns,r]=x.split('|');return{n,ns:+ns,r,k:w+''+p.d+'|'+n}})};
+const exs=s=>{s=s||cur;const p=planDay(s);return p?p.ex.map(e=>({n:e.n,ns:e.ns,r:e.r,k:p.d+'|'+e.n})):[]};
 const tagH=(k,c,ns)=>`<span class="tag ${c>=ns?'ok':'nb'}" data-tg="${k}">${c>=ns?ic('check'):''}${c}/${ns}</span>`;
 // Refresh the session meter and set tags in place after a set is ticked (a full render would reset scroll and open sections)
 function pg(){const es=exs();if(!es.length||!$('#pgb'))return;const lg=day().w||{},tags=[...document.querySelectorAll('[data-tg]')];let tot=0,dn2=0;
  es.forEach(e=>{const c=cnt(lg,e.k,e.ns);tot+=e.ns;dn2+=c;tags.filter(t=>t.dataset.tg===e.k).forEach(el=>{el.className='tag '+(c>=e.ns?'ok':'nb');el.innerHTML=(c>=e.ns?ic('check'):'')+c+'/'+e.ns})});
  $('#pgb').textContent=dn2+' / '+tot+' sets';$('#pgp').textContent=(tot?Math.round(dn2/tot*100):0)+'% done';$('#pgs').innerHTML=segs(dn2,tot);$('#pgs').setAttribute('aria-label',dn2+' of '+tot+' sets done')}
 const est=es=>{let s=0;es.forEach(e=>{s+=e.ns*(sd(e.r)+rf(e.n,e.r))});return Math.max(5,Math.round((s/60+15)/5)*5)};
-function muTags(es,d){const c={};es.forEach(e=>{const g=grp(e.n,''+d);if(g)c[g]=(c[g]||0)+e.ns});return Object.keys(c).sort((a,b)=>c[b]-c[a]).map(g=>`<span class="tag nb">${g} ${c[g]}</span>`).join('')}
-const head=()=>`<h2>${planDay(cur).t}</h2><div class="mut" style="margin:0 2px">Block ${bl(cur)+1} · week ${md(wn(cur),6)+1} of 6 (${'AB'[wk(cur)]})</div>`;
+function muTags(es){const c={};es.forEach(e=>{const g=muOf(e.k);if(g)c[g]=(c[g]||0)+e.ns});return Object.keys(c).sort((a,b)=>c[b]-c[a]).map(g=>`<span class="tag nb">${g} ${c[g]}</span>`).join('')}
+const head=()=>`<h2>${esc(planDay(cur).t)}</h2><div class="mut" style="margin:0 2px">${esc(wLabel(cur))}</div>`;
 const srCtl=()=>D.sr?`<button class="warn" data-a="sr" style="display:block;width:100%;text-align:left;font:inherit;color:inherit">Shoulder rest is on, so shoulder-loading work is hidden. Bench and incline presses still load the shoulder; go light or skip them if they hurt. Tap to turn it off.</button>`:'';
 // Mon-Sun strip: tap a day to open it
 function wStrip(){const m0=iso(mon(cur)),today=iso(new Date());let h='<div class="wkl" role="group" aria-label="Week">';
@@ -301,7 +327,7 @@ function wStrip(){const m0=iso(mon(cur)),today=iso(new Date());let h='<div class
   const st=lg.se?'fin':ds>0?'part':!p?'rest':'';
   h+=`<button class="wkb ${st}${x==today?' today':''}${x==cur?' sel':''}" data-a="wd" data-d="${x}" aria-label="${fd(x)}: ${lg.se?'finished':ds>0?ds+' sets logged':!p?'rest day':'planned'}"><span>${fd(x,{weekday:'short'}).slice(0,1)}</span><b>${dt(x).getDate()}</b><i>${lg.se?'✓':ds>0?'•':!p?'–':''}</i></button>`}
  return h+'</div>'}
-function nextSess(){for(let i=1;i<=7;i++){const x=addD(cur,i),p=planDay(x);if(p)return`<button class="xr" data-a="wd" data-d="${x}"><span class="xi">${fd(x,{weekday:'short'}).slice(0,3)}</span><div class="xm"><b>Next: ${p.t}</b><div class="mut">${fd(x)}</div></div></button>`}return''}
+function nextSess(){for(let i=1;i<=7;i++){const x=addD(cur,i),p=planDay(x);if(p)return`<button class="xr" data-a="wd" data-d="${x}"><span class="xi">${fd(x,{weekday:'short'}).slice(0,3)}</span><div class="xm"><b>Next: ${esc(p.t)}</b><div class="mut">${fd(x)}</div></div></button>`}return''}
 // One exercise with its set rows
 function exCard(e,lg,big){const{n,ns,r,k}=e,got=lg[k]||[],pv=last(k),dc=cnt(lg,k,ns);
  let h=`<div class="card${big?' big':''}${T&&T.k==k?' act':''}"><div class="hd"><b>${n}</b><span><button class="go" data-a="nt" data-n="${n}" aria-label="Note">📝</button> <button class="go" data-a="go" data-k="${k}" data-n="${n}" data-s="${ns}" data-r="${r}">▶ Start</button></span></div><div class="mut" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">${tagH(k,dc,ns)}<span>${ns} × ${r}${pv?' · last: '+pv.map(a=>a[0]+'×'+a[1]).join(', '):''}</span></div>${sugg(pv,r)}${noteH(n)}`;
@@ -328,7 +354,7 @@ function wSession(es,lg,d){
  let h=wStrip()+head();
  h+=`<div class="card"><div class="hd"><b id="pgb">${dn2} / ${tot} sets</b><span class="mut" id="pgp">${tot?Math.round(dn2/tot*100):0}% done</span></div><div class="segs" id="pgs" role="img" aria-label="${dn2} of ${tot} sets done">${segs(dn2,tot)}</div></div>`;
  h+=srCtl();
- h+=blk('Warm-up (about 10 min)',WU[TY[d]],'w',dn2==0?1:0);
+ h+=blk('Warm-up (about 10 min)',WU[planDay(cur).ty],'w',dn2==0?1:0);
  if(cu){const i=es.indexOf(cu);
   h+=`<div class="mut" style="margin:12px 2px 0">Exercise ${i+1} of ${es.length}. Tap ✓ to log a set; empty fields use last time’s numbers.</div>`+exCard(cu,lg,true);
   const nx=[...es.slice(i+1),...es.slice(0,i)].filter(e=>!comp(e)).slice(0,2);
@@ -349,12 +375,12 @@ function wDone(es,lg,lg0,d){
  let h=wStrip()+head()+`<div class="kpis">${kp('Time',mins==null?'–':mins,mins==null?'':'min')}${kp('Sets',s.sets)}${kp('Volume',Math.round(s.vol).toLocaleString(),'kg')}</div><div class="tags">${muTags(es,d)}</div>`;
  h+='<h2>Personal bests</h2><div class="card">';
  h+=s.prs.length?s.prs.map(p=>`<div class="pr"><span class="tag ok">${ic('up')}PR</span><div class="xm"><b>${p.n}</b><div class="mut">${p.top.kg} × ${p.top.rp} · est. 1RM ${Math.round(p.top.e)} kg (+${p.gain.toFixed(1)})</div></div></div>`).join(''):'<div class="empty">No new bests this time. Beating last session’s reps at the same weight still counts as progress.</div>';
- h+='</div>'+blk('Stretches after training (30 s each, 2 rounds)',ST[TY[d]],'s',1);
+ h+='</div>'+blk('Stretches after training (30 s each, 2 rounds)',ST[planDay(cur).ty],'s',1);
  return h+`<button class="go" data-a="reo" style="margin:12px 2px 0">Reopen session</button>`}
 
 function rW(){
  const d=dt(cur).getDay(),lg0=D.logs[cur]||{},lg=lg0.w||{},es=exs();
- if(!d)return wStrip()+'<h2>Rest day</h2><div class="card">Sunday is for eating and sleeping. Check the Food tab.</div>'+nextSess();
+ if(!es.length)return wStrip()+'<h2>Rest day</h2><div class="card">Rest day. Eat well and sleep. Check the Food tab.</div>'+nextSess();
  return lg0.se?wDone(es,lg,lg0,d):(lg0.ss||dSets(cur)>0)?wSession(es,lg,d):wOver(es,d)}
 function autoRest(k,j){if(D.auto===false)return;const e=exs().find(x=>x.k==k);if(!e)return;if(T&&!T.auto&&T.k==k)return;
  if(j+1>=e.ns){if(T&&T.k==k)stopT();return}
@@ -362,14 +388,16 @@ function autoRest(k,j){if(D.auto===false)return;const e=exs().find(x=>x.k==k);if
 
 // ---- Plan: where you are in the 12-week cycle and this week's days ----
 function rP(){
- const n=wn(cur),m0=iso(mon(cur)),today=iso(new Date()),pos=md(n,12),inB=pos%6,toNext=6-inB;
- let h=`<h2>Training plan</h2><div class="mut" style="margin:0 2px">Week ${n+1} overall. Block ${pos<6?1:2}, week ${inB+1} of 6 (${'AB'[md(n,2)]}).</div><div class="card"><div class="tl">`;
- h+=Array.from({length:12},(_,i)=>`<div class="tw ${i<pos?'past':i==pos?'now':''}" role="img" aria-label="Week ${i+1}${i==pos?', current':''}"><b>${i+1}</b><span>${'AB'[i%2]}</span></div>`).join('')+'</div>';
- h+=`<div class="tll"><span>Block 1</span><span>Block 2</span></div><div class="mut" style="margin-top:10px">Next week is week ${'AB'[md(n+1,2)]}. ${md(n+1,2)?'Week B leans on barbells, machines and cables.':'Week A leans on dumbbells and free weights.'} Block ${pos<6?2:1} starts ${fd(addD(m0,7*toNext))}. Each new block swaps every accessory for an equivalent and keeps the anchor lifts.</div></div>`;
+ const P=PROG(),N=P.weeks.length,n=wn(cur),m0=iso(mon(cur)),today=iso(new Date()),pos=rotIdx(cur),inB=pos%6,toNext=6-inB;
+ let h=`<h2>Training plan</h2><div class="mut" style="margin:0 2px">${P.sample?'':esc(P.name)+' · '}Week ${n+1} overall. ${esc(wLabel(cur))}</div>`;
+ if(N>1){
+  h+=`<div class="card"><div class="tl" style="grid-template-columns:repeat(${Math.min(N,6)},minmax(0,1fr))">`+Array.from({length:N},(_,i)=>`<div class="tw ${i<pos?'past':i==pos?'now':''}" role="img" aria-label="Week ${i+1}${i==pos?', current':''}"><b>${i+1}</b><span>${esc(P.weeks[i].tag||'')}</span></div>`).join('')+'</div>';
+  h+=P.sample?`<div class="tll"><span>Block 1</span><span>Block 2</span></div><div class="mut" style="margin-top:10px">Next week is week ${'AB'[md(n+1,2)]}. ${md(n+1,2)?'Week B leans on barbells, machines and cables.':'Week A leans on dumbbells and free weights.'} Block ${pos<6?2:1} starts ${fd(addD(m0,7*toNext))}. Each new block swaps every accessory for an equivalent and keeps the anchor lifts.</div></div>`
+   :`<div class="mut" style="margin-top:10px">Next week is ${esc(wLabelAt(pos+1))}. The ${N}-week rotation starts over on ${fd(addD(m0,7*(N-pos)))}.</div></div>`}
  h+='<h2>This week</h2>';
- for(let i=0;i<7;i++){const x=addD(m0,i),p=planDay(x),lg=D.logs[x]||{},ds=dSets(x),pt=p?exs(x).reduce((s,e)=>s+e.ns,0):0;
+ for(let i=0;i<7;i++){const x=addD(m0,i),p=planDay(x),lg=D.logs[x]||{},ds=dSets(x),pt=p?p.ex.reduce((s,e)=>s+e.ns,0):0;
   const[c,ico,l]=!p?['nb','flat','Rest']:x<D.start?['nb','flat','Before start']:lg.se?['ok','check','Done']:ds>0?['pace','pace',ds+'/'+pt]:x<today?['wn','alert','Missed']:x==today?['pace','pace','Today']:['nb','clock','Upcoming'];
-  h+=`<button class="xr${x==cur?' cur':''}" data-a="wd" data-d="${x}"><span class="xi">${fd(x,{weekday:'short'}).slice(0,3)}</span><div class="xm"><b>${p?p.t:'Rest day'}</b><div class="mut">${fds(x)}${p?' · '+pt+' sets':''}</div></div><span class="tag ${c}">${ic(ico)}${l}</span></button>`}
+  h+=`<button class="xr${x==cur?' cur':''}" data-a="wd" data-d="${x}"><span class="xi">${fd(x,{weekday:'short'}).slice(0,3)}</span><div class="xm"><b>${p?esc(p.t):'Rest day'}</b><div class="mut">${fds(x)}${p?' · '+pt+' sets':''}</div></div><span class="tag ${c}">${ic(ico)}${l}</span></button>`}
  return h}
 
 // ---- Settings (backup, training options, timer) ----
@@ -396,7 +424,7 @@ function render(){
  $('#hg').classList.toggle('on',tab=='b');
  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t==tab));
  $('#v').innerHTML=tab=='w'?rW():tab=='f'?rF():tab=='p'?rP():tab=='s'?rS():rB()}
-function imp(f){if(!f)return;f.text().then(s=>{try{const n=JSON.parse(s);if(!n.logs)throw 0;if(confirm('Replace the data on this phone with this backup ('+Object.keys(n.logs).length+' days)?')){D=n;save();render()}}catch(e){alert('That file isn’t a Gym Tracker backup.')}})}
+function imp(f){if(!f)return;f.text().then(s=>{try{const n=JSON.parse(s);if(!n.logs)throw 0;if(confirm('Replace the data on this phone with this backup ('+Object.keys(n.logs).length+' days)?')){D=n;migrateKeys(D);save();render()}}catch(e){alert('That file isn’t a Gym Tracker backup.')}})}
 document.addEventListener('change',e=>{const t=e.target;
  if(t.dataset.k!=null){const a=L().w[t.dataset.k]||(L().w[t.dataset.k]=[]),r=a[+t.dataset.j]||(a[+t.dataset.j]=['','',0]);r[+t.dataset.f]=t.value;save()}
  else if(t.dataset.g){const x=L().x||(L().x={}),a=x[t.dataset.g]||(x[t.dataset.g]=[]);a[+t.dataset.i]=t.checked?1:0;save()}
@@ -442,6 +470,7 @@ if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js');
 // ---- Set and rest timer (counts from saved timestamps; cues only fire while the app is open) ----
 const TK=K+'t';let T=null,ac=null,wl=null,tm=null;
 try{T=JSON.parse(localStorage.getItem(TK))}catch(e){}
+if(T&&/^\d\d\|/.test(T.k))T.k=T.k.slice(1);
 const svT=()=>{try{T?localStorage.setItem(TK,JSON.stringify(T)):localStorage.removeItem(TK)}catch(e){}};
 const CUE={start:[[880,0,.15],[1175,.2,.25]],end:[[660,0,.12],[660,.2,.12]],warn:[[440,0,.1],[440,.25,.1],[440,.5,.1]],done:[[880,0,.2],[660,.25,.2],[440,.5,.4]]};
 function tone(p){if(ac){const t=ac.currentTime;p.forEach(([f,o,d])=>{const s=ac.createOscillator(),g=ac.createGain();s.frequency.value=f;s.connect(g);g.connect(ac.destination);g.gain.setValueAtTime(.0001,t+o);g.gain.exponentialRampToValueAtTime(.35,t+o+.02);g.gain.exponentialRampToValueAtTime(.0001,t+o+d);s.start(t+o);s.stop(t+o+d+.05)})}if(navigator.vibrate)navigator.vibrate(p.length>2?[80,60,80,60,80]:[120])}
@@ -471,9 +500,10 @@ function startT(o){snd();T=Object.assign(o,{ph:'ready',t0:Date.now(),du:5,w:0});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&T){wake();tick()}});
 if(T){tm=setInterval(tick,250);tick()}
 // ---- Stats: weekly sets per muscle, weight trend, progress ----
-const TG={Chest:20,Back:18,Traps:5,Shoulders:23,Triceps:14,Biceps:14,Forearms:9,Abs:10,Quads:13,Hamstrings:12,Glutes:4,Calves:10};
+// Weekly planned sets per muscle for the week being viewed (the targets)
+function targets(){const wkp=PROG().weeks[rotIdx(cur)],c={},o={};for(const d in wkp.days)wkp.days[d].ex.forEach(e=>{const m=muOf(d+'|'+e.n);if(m)c[m]=(c[m]||0)+e.ns});MUS.forEach(m=>{if(c[m])o[m]=c[m]});return o}
 const grp=(n,d)=>/crunch|leg raise|sit-up|rollout/i.test(n)?'Abs':/calf/i.test(n)?'Calves':/hip thrust/i.test(n)?'Glutes':/shrug/i.test(n)?'Traps':/shoulder press|lateral raise|rear|face pull|reverse pec deck/i.test(n)?'Shoulders':/back extension/i.test(n)?(d=='2'?'Back':'Hamstrings'):/leg curl|romanian|RDL/i.test(n)?'Hamstrings':/squat|leg press|lunge|step-up|leg extension/i.test(n)?'Quads':/extension|pushdown|skull|dip machine/i.test(n)?'Triceps':/wrist|reverse curl/i.test(n)?'Forearms':/curl/i.test(n)?'Biceps':/row|pulldown|pullover|shrug/i.test(n)?'Back':/press|fly|pec deck/i.test(n)?'Chest':null;
-function wsets(){const m=mon(cur),c={};for(let i=0;i<7;i++){const d=new Date(m);d.setDate(d.getDate()+i);const w=(D.logs[iso(d)]||{}).w||{};for(const k in w){const g=grp(k.split('|')[1],k[1]);if(g)c[g]=(c[g]||0)+w[k].filter(s=>s&&s[2]).length}}return c}
+function wsets(){const m=mon(cur),c={};for(let i=0;i<7;i++){const d=new Date(m);d.setDate(d.getDate()+i);const w=(D.logs[iso(d)]||{}).w||{};for(const k in w){const g=muOf(k);if(g)c[g]=(c[g]||0)+w[k].filter(s=>s&&s[2]).length}}return c}
 function wt(){const r={};for(const x in D.logs){const b=+D.logs[x].bw;if(b>0){const k=iso(mon(x));(r[k]=r[k]||[]).push(b)}}return Object.keys(r).sort().slice(-6).map(k=>({k,a:r[k].reduce((s,v)=>s+v,0)/r[k].length}))}
 function prs(){const m={};for(const x of Object.keys(D.logs).sort()){const w=D.logs[x].w||{};for(const k in w){const n=k.split('|')[1];let top=null;w[k].forEach(s=>{if(!s||!s[2])return;const kg=parseFloat(s[0]),rp=parseFloat(s[1]);if(!(kg>0&&rp>0))return;const e=kg*(1+rp/30);if(!top||e>top.e)top={kg,rp,e}});if(!top)continue;const o=m[n];if(!o)m[n]={n,best:top,bd:x,last:top,ld:x,cnt:1};else{o.cnt++;if(top.e>o.best.e){o.best=top;o.bd=x}o.last=top;o.ld=x}}}return Object.values(m).sort((a,b)=>b.ld.localeCompare(a.ld))}
 // ---- Stats page: three sections (This week, Body, Lifts), charts drawn as inline SVG ----
@@ -495,7 +525,7 @@ const wpts=()=>Object.keys(D.logs).filter(x=>D.logs[x].bw>0).sort().map(x=>({d:x
 // Sets planned for the current week before the selected day (rest of the week counts when the week is over)
 function planSoFar(){const m=iso(mon(cur)),end=addD(m,6)<iso(new Date())?addD(m,7):cur,c={};
  for(let i=0;i<7;i++){const x=addD(m,i);if(x>=end||x<D.start)continue;const p=planDay(x);if(!p)continue;
-  p.list.split(';').forEach(e=>{const[n,ns]=e.split('|'),g=grp(n,''+p.d);if(g)c[g]=(c[g]||0)+ +ns})}
+  p.ex.forEach(e=>{const g=muOf(p.d+'|'+e.n);if(g)c[g]=(c[g]||0)+e.ns})}
  return c}
 function wVerdict(){const ws=wt();if(ws.length<2)return null;const d=ws[ws.length-1].a-ws[ws.length-2].a;
  return d>.4?{c:'wn',i:'alert',t:'Faster than planned',x:'If this lasts 3 weeks, trim about 200 kcal.',d}:
@@ -505,16 +535,16 @@ const SS={behind:['wn','alert','Behind'],pace:['pace','pace','On pace'],later:['
 const heatL=n=>n===0?' z':n<18?' l1':n<26?' l2':n<32?' l3':' l4';
 
 function sWeek(){
- const dn_=wsets(),ex=planSoFar(),m0=iso(mon(cur)),today=iso(new Date());
+ const dn_=wsets(),ex=planSoFar(),m0=iso(mon(cur)),today=iso(new Date()),TG=targets();
  const mus=Object.keys(TG).map(g=>{const t=TG[g],d=dn_[g]||0,e=ex[g]||0;return{n:g,t,d,e,s:D.sr&&g=='Shoulders'?'rest':d>=t?'done':(e===0&&d===0)?'later':d>=e?'pace':'behind'}});
  const ord={behind:0,pace:1,later:2,rest:3,done:4};
  mus.sort((a,b)=>ord[a.s]-ord[b.s]||(b.e-b.d)-(a.e-a.d));
  const plan=Object.keys(TG).reduce((s,g)=>s+(D.sr&&g=='Shoulders'?0:TG[g]),0),tot=mus.reduce((s,m)=>s+m.d,0);
- let sess=0;for(let i=0;i<7;i++)if(dSets(addD(m0,i))>0)sess++;
+ let sess=0,tdays=0;for(let i=0;i<7;i++){if(dSets(addD(m0,i))>0)sess++;if(planDay(addD(m0,i)))tdays++}
  const wp=wpts(),v=wVerdict(),lw=wp.length?wp[wp.length-1].w:null;
  let h=`<div class="mut" style="margin:10px 2px 0">${fds(m0)} – ${fds(addD(m0,6))}</div><div class="kpis">
-  <div class="kpi"><div class="l">Sessions</div><div class="v">${sess}<small> / 6</small></div><div class="d">this week</div></div>
-  <div class="kpi"><div class="l">Sets</div><div class="v">${tot}<small> / ${plan}</small></div><div class="mini"><i style="width:${Math.min(100,tot/plan*100)}%"></i></div></div>
+  <div class="kpi"><div class="l">Sessions</div><div class="v">${sess}<small> / ${tdays}</small></div><div class="d">this week</div></div>
+  <div class="kpi"><div class="l">Sets</div><div class="v">${tot}<small> / ${plan}</small></div><div class="mini"><i style="width:${plan?Math.min(100,tot/plan*100):0}%"></i></div></div>
   <div class="kpi"><div class="l">Weight</div><div class="v">${lw==null?'–':lw.toFixed(1)}<small> kg</small></div><div class="d">${lw==null?'log it on Food':v?ic(v.d>.05?'up':'flat')+(v.d>=0?'+':'')+v.d.toFixed(2)+' / wk':'needs 2 weeks'}</div></div></div>`;
  h+=`<h2>Muscle coverage</h2><div class="mut" style="margin:0 2px 6px">Behind first, finished last. Tap a muscle for details.</div>
   <div class="key"><span><s></s>Sets logged</span><span><u></u>Planned before today</span></div><div class="card">`;
@@ -563,7 +593,9 @@ function sBody(){
 function wsel(b){if(!WCH)return;$('#wg').setAttribute('x1',WCH.xs[b]);$('#wg').setAttribute('x2',WCH.xs[b]);$('#wd').setAttribute('cx',WCH.xs[b]);$('#wd').setAttribute('cy',WCH.ys[b]);$('#wv').textContent=WCH.t[b].v;$('#wl').textContent=WCH.t[b].l}
 function wpick(e){const sv=WCH&&e.target.closest&&e.target.closest('#wch');if(!sv)return;const r=sv.getBoundingClientRect(),px=(e.clientX-r.left)/r.width*WCH.W;let b=0;WCH.xs.forEach((x,i)=>{if(Math.abs(x-px)<Math.abs(WCH.xs[b]-px))b=i});wsel(b)}
 
-const AN=[['Bench press',/^Barbell bench press/],['Bent-over row',/^Barbell bent-over row/],['Back squat',/^Barbell back squat/],['Shoulder press (dumbbell)',/^Seated dumbbell shoulder press/],['Lat pulldown',/^Lat pulldown \(neutral/],['Romanian deadlift',/^Barbell Romanian deadlift/]];
+// Anchor lifts for the Lifts tab: the program's own list, else the first exercise of each training day
+const anchors=()=>{const P=PROG();if(P.anchors)return P.anchors.map(([n,re])=>[n,new RegExp(re)]);
+ const seen=new Set(),o=[];for(const w of P.weeks)for(let d=0;d<7;d++){const day=w.days[d];if(day&&day.ex.length&&o.length<6){const n=day.ex[0].n;if(!seen.has(n)){seen.add(n);o.push([n,new RegExp('^'+n.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'$')])}}}return o};
 function anchor(re){const r=[];for(const x of Object.keys(D.logs).sort()){const w=D.logs[x].w||{};let top=null;
  for(const k in w){if(!re.test(k.split('|')[1]))continue;w[k].forEach(s=>{if(!s||!s[2])return;const kg=parseFloat(s[0]),rp=parseFloat(s[1]);if(!(kg>0&&rp>0))return;const e=kg*(1+rp/30);if(!top||e>top.e)top={d:x,kg,rp,e}})}
  if(top)r.push(top)}return r}
@@ -572,7 +604,7 @@ function spark(ss,on){const c=on?'var(--ac)':'var(--mu)';if(!ss.length)return'<s
  const e=ss.map(s=>s.e),mn=Math.min(...e),r=(Math.max(...e)-mn)||1;
  return`<svg class="sp" viewBox="0 0 100 30" aria-hidden="true"><polyline points="${ss.map((s,i)=>(4+i/(ss.length-1)*92)+','+(26-(s.e-mn)/r*22)).join(' ')}" fill="none" stroke="${c}" stroke-width="${on?2.5:1.75}" stroke-linejoin="round" stroke-linecap="round" opacity="${on?1:.7}"/></svg>`}
 function sLifts(){
- const A=AN.map(([n,re])=>({n,ss:anchor(re)}));if(sLift>=A.length)sLift=0;
+ const A=anchors().map(([n,re])=>({n,ss:anchor(re)}));if(sLift>=A.length)sLift=0;
  let h='<h2>Main lifts</h2><div class="mut" style="margin:0 2px 6px">Estimated one-rep max (1RM) of your anchor lifts, best set of each session. Tap one to open it.</div><div class="lgd">';
  h+=A.map((l,i)=>{const n=l.ss.length,cu=l.ss[n-1],dl=n>1?cu.e-l.ss[0].e:null;
   return`<button class="lc" data-a="sln" data-i="${i}" aria-pressed="${i==sLift}"><div class="n">${l.n}</div><div class="v">${n?Math.round(cu.e):'–'}<small>${n?' kg':''}</small></div>
