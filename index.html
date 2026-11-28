@@ -334,7 +334,7 @@ const cnt=(lg,k,ns)=>(lg[k]||[]).filter((q,j)=>q&&q[2]&&j<+ns).length;
 // ---- Today: overview -> focus session -> finish summary ----
 let foc=null; // exercise the user jumped to; otherwise the first unfinished one
 // The day's exercises as objects; k is the key the sets are logged under
-const exs=s=>{s=s||cur;const p=planDay(s);return p?p.ex.map(e=>({n:e.n,ns:e.ns,r:e.r,k:p.d+'|'+e.n})):[]};
+const exs=s=>{s=s||cur;const p=planDay(s);return p?p.ex.map(e=>({n:e.n,ns:e.ns,r:e.r,note:e.note||'',k:p.d+'|'+e.n})):[]};
 const tagH=(k,c,ns)=>`<span class="tag ${c>=ns?'ok':'nb'}" data-tg="${k}">${c>=ns?ic('check'):''}${c}/${ns}</span>`;
 // Refresh the session meter and set tags in place after a set is ticked (a full render would reset scroll and open sections)
 function pg(){const es=exs();if(!es.length||!$('#pgb'))return;const lg=day().w||{},tags=[...document.querySelectorAll('[data-tg]')];let tot=0,dn2=0;
@@ -352,8 +352,8 @@ function wStrip(){const m0=iso(mon(cur)),today=iso(new Date());let h='<div class
  return h+'</div>'}
 function nextSess(){for(let i=1;i<=7;i++){const x=addD(cur,i),p=planDay(x);if(p)return`<button class="xr" data-a="wd" data-d="${x}"><span class="xi">${fd(x,{weekday:'short'}).slice(0,3)}</span><div class="xm"><b>Next: ${esc(p.t)}</b><div class="mut">${fd(x)}</div></div></button>`}return''}
 // One exercise with its set rows
-function exCard(e,lg,big){const{n,ns,r,k}=e,got=lg[k]||[],pv=last(k),dc=cnt(lg,k,ns);
- let h=`<div class="card${big?' big':''}${T&&T.k==k?' act':''}"><div class="hd"><b>${n}</b><span><button class="go" data-a="nt" data-n="${n}" aria-label="Note">📝</button> <button class="go" data-a="go" data-k="${k}" data-n="${n}" data-s="${ns}" data-r="${r}">▶ Start</button></span></div><div class="mut" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">${tagH(k,dc,ns)}<span>${ns} × ${r}${pv?' · last: '+pv.map(a=>a[0]+'×'+a[1]).join(', '):''}</span></div>${sugg(pv,r)}${noteH(n)}`;
+function exCard(e,lg,big){const{n,ns,r,k,note}=e,got=lg[k]||[],pv=last(k),dc=cnt(lg,k,ns);
+ let h=`<div class="card${big?' big':''}${T&&T.k==k?' act':''}"><div class="hd"><b>${n}</b><span><button class="go" data-a="nt" data-n="${n}" aria-label="Note">📝</button> <button class="go" data-a="go" data-k="${k}" data-n="${n}" data-s="${ns}" data-r="${r}">▶ Start</button></span></div><div class="mut" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">${tagH(k,dc,ns)}<span>${ns} × ${r}${pv?' · last: '+pv.map(a=>a[0]+'×'+a[1]).join(', '):''}</span></div>${note?`<div class="mut" style="margin-top:4px">${esc(note)}</div>`:''}${sugg(pv,r)}${noteH(n)}`;
  for(let j=0;j<ns;j++){const g=got[j]||[],p=pv?(pv[j]||pv[pv.length-1]):[];
   h+=`<div class="set"><span>${j+1}</span><input type="number" inputmode="decimal" step="${I5()}" aria-label="${U()}" placeholder="${p[0]??U()}" value="${g[0]??''}" data-k="${k}" data-j="${j}" data-f="0"><input type="number" inputmode="numeric" aria-label="reps" placeholder="${p[1]??'reps'}" value="${g[1]??''}" data-k="${k}" data-j="${j}" data-f="1"><button class="lf${g[3]===''||g[3]==null?'':' on'}" data-a="lf" data-k="${k}" data-j="${j}" aria-label="Reps left">${lfT(g[3])}</button><button class="ck${g[2]?' on':''}" data-a="ck" data-k="${k}" data-j="${j}" aria-label="Done">✓</button></div>`}
  return h+'</div>'}
@@ -534,12 +534,15 @@ function compileProg(P){return{name:P.name,sample:false,anchors:null,weeks:P.wee
 function toFile(){const P=PROG();return{format:'gymtracker-program',version:1,name:P.name,unit:D.unit||'kg',weeks:P.weeks.map(w=>({label:w.label,days:Object.keys(w.days).sort().map(d=>({day:DAYN[d],title:w.days[d].t,exercises:w.days[d].ex.map(e=>({name:e.n,sets:e.ns,reps:String(e.r).replace(/–/g,'-'),muscle:e.m,note:e.note||''}))}))}))}}
 const rememberTags=()=>{D.mmap=D.mmap||{};PROG().weeks.forEach(w=>{for(const d in w.days)w.days[d].ex.forEach(e=>{D.mmap[d+'|'+e.n]=e.m})})};
 function covH(P){const c={};P.weeks.forEach(w=>w.days.forEach(d=>d.exercises.forEach(e=>{c[e.muscle]=(c[e.muscle]||0)+e.sets})));
- return Object.keys(c).filter(m=>m!='Other').sort((a,b)=>c[b]-c[a]).map(m=>{const v=c[m]/P.weeks.length,r=Math.round(v*10)/10;return`<span class="tag ${v<10?'wn':v>20?'nb':'ok'}">${m} ${r}</span>`}).join('')}
+ return Object.keys(c).filter(m=>m!='Other').sort((a,b)=>c[b]-c[a]).map(m=>{const v=c[m]/P.weeks.length,r=Math.round(v*10)/10,lo=LOWMIN[m]||10;return`<span class="tag ${v<lo?'wn':v>20?'nb':'ok'}">${m} ${r}</span>`}).join('')}
+// Smaller muscles also get work from big lifts, so they need fewer direct sets to count as covered
+const LOWMIN={Abs:8,Forearms:4,Traps:4,Glutes:3,Adductors:3,'Lower back':3};
 let bsub=null,PEND=null; // Settings sub-screen: null, 'prog' (set up) or 'prev' (check before saving)
 function openPreview(r){PEND={r,start:iso(mon(iso(new Date())))};bsub='prev';render();scrollTo(0,0)}
 const backB=s=>`<button class="go" data-a="bsb" data-s="${s}" style="margin:10px 2px 0">‹ ${s?'Back':'Settings'}</button>`;
 function rProg(){const cur_=PROG();
  return backB('')+`<h2>Set up your program</h2><div class="mut" style="margin:0 2px">Now using: <b>${esc(cur_.name)}</b> (${cur_.weeks.length}-week rotation)</div>
+ <h2>Ready-made plan</h2>${BUILTIN.map((b,i)=>`<div class="card"><b>${esc(b.name)}</b><div class="mut" style="margin-top:4px">${esc(b.desc)}</div><button class="btn" data-a="pbi" data-i="${i}">See this plan</button></div>`).join('')}
  <h2>Use an AI assistant</h2><div class="card"><div class="mut"><b>1.</b> Copy the prompt.<br><b>2.</b> Paste it into ChatGPT or Claude, replace the last line with your routine, and send it.<br><b>3.</b> Upload the file it gives you, or paste its reply below.</div>
  <button class="btn" data-a="pcp" id="pcp">Copy the prompt</button>
  <details style="margin-top:10px"><summary>Show the prompt</summary><textarea class="ta" readonly rows="8" aria-label="Prompt">${esc(IMPORT_PROMPT)}</textarea></details>
@@ -553,10 +556,10 @@ function rProg(){const cur_=PROG();
 function rPrev(){if(!PEND)return rProg();const{r,start}=PEND;
  if(r.E.length)return backB('prog')+`<h2>Could not read it</h2><div class="warn">${r.E.map(esc).join('<br>')}</div>`;
  const P=r.program,n=P.weeks.reduce((s,w)=>s+w.days.reduce((a,d)=>a+d.exercises.length,0),0);
- let h=backB('prog')+`<h2>Check your program</h2><div class="card"><b>${esc(P.name)}</b><div class="mut">${P.weeks.length}-week rotation · ${n} exercises</div></div>`;
+ let h=backB('prog')+`<h2>Check your program</h2><div class="card"><b>${esc(P.name)}</b><div class="mut">${P.weeks.length}-week rotation · about ${Math.round(n/P.weeks.length)} exercises a week</div></div>`;
  if(r.W.length)h+=`<details class="card"><summary><b>${r.W.length} thing${r.W.length>1?'s':''} to check</b></summary>${r.W.slice(0,40).map(w=>`<div class="mut" style="margin-top:6px">• ${esc(w)}</div>`).join('')}</details>`;
- if(P.assumptions.length)h+=`<div class="card"><b>Notes from the assistant</b>${P.assumptions.map(a=>`<div class="mut" style="margin-top:6px">• ${esc(a)}</div>`).join('')}</div>`;
- h+=`<div class="card"><b>Sets per muscle each week</b><div class="mut" style="margin:4px 0 8px">Most people grow well with 10–20. Orange is under 10.</div><div class="tags" id="cov" style="margin:0">${covH(P)}</div></div>`;
+ if(P.assumptions.length)h+=`<div class="card"><b>Notes</b>${P.assumptions.map(a=>`<div class="mut" style="margin-top:6px">• ${esc(a)}</div>`).join('')}</div>`;
+ h+=`<div class="card"><b>Sets per muscle each week</b><div class="mut" style="margin:4px 0 8px">Big muscles grow well with 10–20 sets a week. Orange means low for that muscle.</div><div class="tags" id="cov" style="margin:0">${covH(P)}</div></div>`;
  P.weeks.forEach((w,wi)=>{h+=`<details class="card"${wi==0?' open':''}><summary><b>${esc(w.label||'Week '+(wi+1))}</b></summary>`;
   w.days.forEach((d,di)=>{h+=`<div class="pd"><b>${d.day} · ${esc(d.title)}</b>`;
    d.exercises.forEach((e,ei)=>{h+=`<div class="pe"><div class="pl"><span>${esc(e.name)}</span><span class="mut">${e.sets} × ${esc(e.reps)}</span></div><select data-pm="${wi}.${di}.${ei}" aria-label="Muscle for ${esc(e.name)}">${MUSE.map(m=>`<option${m==e.muscle?' selected':''}>${m}</option>`).join('')}</select></div>`});
@@ -568,6 +571,124 @@ function applyProgram(){const P=PEND.r.program,wasFresh=fresh();rememberTags();D
 function copyPrompt(btn){const done=()=>{btn.textContent='Copied';setTimeout(()=>{btn.textContent='Copy the prompt'},2000)};
  const fb=()=>{const t=document.createElement('textarea');t.value=IMPORT_PROMPT;document.body.appendChild(t);t.select();try{document.execCommand('copy');done()}catch(e){alert('Open “Show the prompt” and copy it by hand.')}t.remove()};
  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(IMPORT_PROMPT).then(done,fb);else fb()}
+
+// ---- Ready-made plan: 6-day Push / Pull / Legs, Sunday rest. Each muscle twice a week; anchors fixed for 12 weeks, accessories swap at week 7 ----
+// day, title, [name, sets, reps, muscle, cue]
+const PPL1=[
+['Mon','Push 1 · chest',[
+ ['Barbell bench press',3,'6-8','Chest','Anchor lift. Add weight when every set reaches 8.'],
+ ['Incline dumbbell press',3,'8-10','Chest','Low incline, about 30°. Full stretch at the bottom.'],
+ ['Cable crossover fly (low to high)',3,'12-15','Chest','Stretch at the start, squeeze at the top.'],
+ ['Dumbbell lateral raise',4,'12-20','Shoulders','Light and strict. Last set to 0–1 reps left.'],
+ ['Overhead cable extension (rope)',3,'10-12','Triceps','Elbows stay forward to stretch the long head.'],
+ ['Rope pushdown',3,'12-15','Triceps',''],
+ ['Kneeling cable crunch',3,'10-15','Abs','Round the spine, do not just hinge at the hips.']]],
+['Tue','Pull 1 · back',[
+ ['Barbell bent-over row',3,'6-8','Back','Anchor lift. Torso about 45°, no swinging.'],
+ ['Lat pulldown (overhand)',3,'8-10','Back','Pull the elbows down to your sides.'],
+ ['Chest-supported dumbbell row',3,'10-12','Back',''],
+ ['Reverse pec deck',3,'12-15','Shoulders','Rear delts. Light weight, controlled.'],
+ ['Incline dumbbell curl',3,'8-12','Biceps','Stretch at the bottom of each rep.'],
+ ['Hammer curl',3,'10-12','Biceps',''],
+ ['Dumbbell shrug',3,'10-15','Traps','Pause 1 second at the top.'],
+ ['Wrist curl (dumbbell)',3,'12-15','Forearms','']]],
+['Wed','Legs 1 · quads',[
+ ['Barbell back squat',4,'6-8','Quads','Anchor lift. Depth you can control.'],
+ ['Leg press (45°)',3,'10-12','Quads','Feet shoulder width, mid platform.'],
+ ['Leg extension',3,'12-15','Quads','Slow on the way down.'],
+ ['Lying leg curl',3,'10-12','Hamstrings',''],
+ ['Standing calf raise (Smith)',6,'8-12','Calves','Full stretch at the bottom, pause 1 second.'],
+ ['Ab crunch machine',3,'10-15','Abs','']]],
+['Thu','Push 2 · shoulders',[
+ ['Seated dumbbell shoulder press',3,'8-10','Shoulders','Anchor lift. Stop if the shoulder pinches.'],
+ ['Plate-loaded incline chest press',3,'8-12','Chest',''],
+ ['Pec deck',3,'12-15','Chest',''],
+ ['Cable lateral raise (behind the back)',4,'12-20','Shoulders','Same goal as dumbbells: strict, 0–1 reps left on the last set.'],
+ ['Lying EZ-bar skull-crusher',3,'8-12','Triceps','Lower to just behind the head.'],
+ ['Straight-bar pushdown',3,'12-15','Triceps','']]],
+['Fri','Pull 2 · lats',[
+ ['Lat pulldown (neutral or close grip)',3,'8-12','Back','Anchor lift. Full stretch at the top.'],
+ ['Seated cable row',3,'10-12','Back',''],
+ ['Dumbbell pullover',2,'12-15','Back','Feel the lats stretch under load.'],
+ ['Face pull',3,'12-15','Shoulders','Rear delts and upper back.'],
+ ['Lean-away lateral raise',3,'15-20','Shoulders',''],
+ ['EZ-bar preacher curl',3,'8-12','Biceps',''],
+ ['Cable curl (low pulley)',3,'12-15','Biceps',''],
+ ['Reverse curl (EZ-bar)',3,'10-12','Forearms','Thumbs wrapped, wrists straight.'],
+ ['Barbell shrug',2,'10-15','Traps','']]],
+['Sat','Legs 2 · hamstrings + glutes',[
+ ['Barbell Romanian deadlift',3,'8-10','Hamstrings','Anchor lift. Hips back, stop where the hamstrings stretch.'],
+ ['Dumbbell Bulgarian split squat',3,'8-10','Quads',''],
+ ['Barbell hip thrust',3,'8-12','Glutes','Pause 1 second at the top.'],
+ ['Lying leg curl (slow lowering)',4,'12-15','Hamstrings','Three seconds down.'],
+ ['Leg extension (single-leg)',2,'12-15','Quads',''],
+ ['Hip adduction machine',3,'12-15','Adductors',''],
+ ['Leg press calf raise',6,'12-15','Calves','Full stretch, pause 1 second.'],
+ ['Reverse crunch (decline bench)',3,'10-15','Abs','']]]
+];
+const PPL2=[
+['Mon','Push 1 · chest',[
+ ['Barbell bench press',3,'6-8','Chest','Anchor lift. Add weight when every set reaches 8.'],
+ ['Incline barbell press (Smith or barbell)',3,'8-10','Chest',''],
+ ['Low-pulley cable fly',3,'12-15','Chest','Stretch at the start, squeeze at the top.'],
+ ['Lean-away lateral raise',4,'12-20','Shoulders','Light and strict. Last set to 0–1 reps left.'],
+ ['Seated overhead EZ-bar extension',3,'10-12','Triceps','Elbows stay forward to stretch the long head.'],
+ ['V-bar pushdown',3,'12-15','Triceps',''],
+ ['Standing cable crunch',3,'10-15','Abs','']]],
+['Tue','Pull 1 · back',[
+ ['Barbell bent-over row',3,'6-8','Back','Anchor lift. Torso about 45°, no swinging.'],
+ ['Lat pulldown (underhand)',3,'8-10','Back',''],
+ ['One-arm dumbbell row',3,'10-12','Back',''],
+ ['Cable rear-delt fly',3,'12-15','Shoulders','Rear delts. Light weight, controlled.'],
+ ['Bayesian cable curl',3,'8-12','Biceps','Cable behind you, stretch at the bottom.'],
+ ['Cross-body hammer curl',3,'10-12','Biceps',''],
+ ['Cable shrug',3,'10-15','Traps','Pause 1 second at the top.'],
+ ['Wrist curl (barbell)',3,'12-15','Forearms','']]],
+['Wed','Legs 1 · quads',[
+ ['Barbell back squat',4,'6-8','Quads','Anchor lift. Depth you can control.'],
+ ['Leg press (feet high and wide)',3,'10-12','Quads',''],
+ ['Leg extension (slow lowering)',3,'12-15','Quads','Three seconds down.'],
+ ['Lying leg curl (slow lowering)',3,'10-12','Hamstrings','Three seconds down.'],
+ ['Single-leg Smith calf raise',6,'8-12','Calves','Full stretch at the bottom, pause 1 second.'],
+ ['Weighted decline sit-up',3,'10-15','Abs','']]],
+['Thu','Push 2 · shoulders',[
+ ['Seated dumbbell shoulder press',3,'8-10','Shoulders','Anchor lift. Stop if the shoulder pinches.'],
+ ['Neutral-grip dumbbell press',3,'8-12','Chest',''],
+ ['Cable crossover fly (high to low)',3,'12-15','Chest',''],
+ ['Cable lateral raise (across the body)',4,'12-20','Shoulders','Strict, 0–1 reps left on the last set.'],
+ ['Incline dumbbell skull-crusher',3,'8-12','Triceps','Bench at a low incline for more stretch.'],
+ ['Reverse-grip pushdown',3,'12-15','Triceps','']]],
+['Fri','Pull 2 · lats',[
+ ['Lat pulldown (neutral or close grip)',3,'8-12','Back','Anchor lift. Full stretch at the top.'],
+ ['Seated cable row (wide grip)',3,'10-12','Back',''],
+ ['Straight-arm cable pulldown',2,'12-15','Back','Arms nearly straight, feel the lats.'],
+ ['Bent-over dumbbell rear raise',3,'12-15','Shoulders','Rear delts and upper back.'],
+ ['Dumbbell lateral raise',3,'15-20','Shoulders',''],
+ ['Dumbbell preacher curl',3,'8-12','Biceps',''],
+ ['Standing EZ-bar curl',3,'12-15','Biceps',''],
+ ['Cable reverse curl',3,'10-12','Forearms','Thumbs wrapped, wrists straight.'],
+ ['Smith shrug',2,'10-15','Traps','']]],
+['Sat','Legs 2 · hamstrings + glutes',[
+ ['Barbell Romanian deadlift',3,'8-10','Hamstrings','Anchor lift. Hips back, stop where the hamstrings stretch.'],
+ ['Smith machine split squat',3,'8-10','Quads',''],
+ ['Hip thrust (Smith)',3,'8-12','Glutes','Pause 1 second at the top.'],
+ ['Lying leg curl (single-leg)',4,'12-15','Hamstrings','Three seconds down.'],
+ ['Leg extension (single-leg slow)',2,'12-15','Quads',''],
+ ['Hip adduction machine (slow)',3,'12-15','Adductors',''],
+ ['Single-leg dumbbell calf raise',6,'10-15','Calves','Full stretch, pause 1 second.'],
+ ['Ab crunch machine (slow)',3,'10-15','Abs','']]]
+];
+function buildPPL(){const weeks=[];
+ for(let w=0;w<12;w++){const B=w<6?PPL1:PPL2;weeks.push({label:'Block '+(w<6?1:2)+' · week '+(w%6+1)+' of 6',days:B.map(([day,title,ex])=>({day,title,exercises:ex.map(([name,sets,reps,muscle,note])=>({name,sets,reps,muscle,note}))}))})}
+ return{format:'gymtracker-program',version:1,name:'6-day Push/Pull/Legs',unit:'kg',weeks,assumptions:[
+  'Every muscle is trained twice a week. Training a muscle at least twice weekly beats once weekly at equal volume.',
+  'Weekly sets per muscle sit in the 10–20 range, and no session has more than about 10 sets for one muscle.',
+  'The six anchor lifts stay the same for all 12 weeks. Every other exercise changes at week 7.',
+  'End each exercise with 0–2 reps left. Add weight once every set reaches the top of the rep range.',
+  'Rest 2–3 minutes after heavy compound lifts and 60–90 seconds after isolation work.',
+  'If you stall for two weeks or your joints ache, take an easy week: same days, half the sets, lighter weights.',
+  'Needs barbells, dumbbells, cables, a Smith machine, a leg press, leg extension and a lying leg curl.']}}
+const BUILTIN=[{name:'6-day Push/Pull/Legs',make:buildPPL,desc:'Monday to Saturday, Sunday rest. Every muscle twice a week with 10–20 sets each, about 75–90 minutes a session. Heavy anchor lifts, then accessories that change at week 7.'}];
 
 // ---- Settings (backup, training options, timer) ----
 const sw=(label,on,a)=>`<div class="row"><span>${label}</span><button class="go" role="switch" aria-checked="${on}" data-a="${a}">${on?'On':'Off'}</button></div>`;
@@ -624,7 +745,7 @@ function rWelcome(){const g=goal(),u=U();
  return`<h2>Welcome</h2><div class="mut" style="margin:0 2px">Set up in a minute. Your data stays on this phone.</div>
  <h2>Your goal</h2><div class="seg" role="radiogroup" aria-label="Goal">${[['gain','Gain'],['maintain','Maintain'],['lose','Lose']].map(([k,l])=>`<button role="radio" aria-checked="${g==k}" data-a="wgl" data-v="${k}">${l}</button>`).join('')}</div>
  <h2>Weight unit</h2><div class="seg c2" role="radiogroup" aria-label="Unit">${['kg','lb'].map(k=>`<button role="radio" aria-checked="${u==k}" data-a="wun" data-v="${k}">${k}</button>`).join('')}</div>
- <h2>Your training</h2><button class="btn" data-a="wim">Import my routine</button><button class="btn alt" data-a="wim">Type it in</button><button class="go" data-a="wsm" style="width:100%;height:44px;margin-top:12px">Try the sample plan first</button>
+ <h2>Your training</h2><button class="btn" data-a="wim">Import my routine</button><button class="btn alt" data-a="wim">Type it in</button><button class="go" data-a="wbi" data-i="0" style="width:100%;height:44px;margin-top:12px">Use the 6-day starter plan</button>
  ${D.noinst||standalone()?'':'<h2>Install</h2>'+instCard(true)}<div class="mut" style="margin:12px 2px 0">Moving from another phone? Open Settings (top right) and restore your backup.</div>`}
 function render(){
  const fr=fresh()&&tab!='b',dayTab=(tab=='w'||tab=='f')&&!fr;
@@ -664,6 +785,8 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t
  else if(a=='tst'){snd();[['start',0],['end',1200],['warn',2400],['done',3800]].forEach(([c,d])=>setTimeout(()=>tone(CUE[c]),d))}
  else if(a=='bk'){tab='b';render()}
  else if(a=='sr'){D.sr=!D.sr;save();render()}
+ else if(a=='pbi'){const b=BUILTIN[+t.dataset.i];if(b)openPreview(normalizeProgram(b.make()))}
+ else if(a=='wbi'){const b=BUILTIN[+t.dataset.i];if(b){tab='b';openPreview(normalizeProgram(b.make()))}}
  else if(a=='inst'){if(DIP){const q=DIP;DIP=null;q.prompt();render()}}
  else if(a=='ihide'){D.noinst=true;save();render()}
  else if(a=='wgl'){D.goal=t.dataset.v;save();render()}
