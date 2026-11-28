@@ -170,6 +170,14 @@ header h1{flex:1;text-align:center}
 .tw.past{background:var(--cd2)}
 .tw.now{background:var(--ac);border-color:var(--ac);color:var(--on)}.tw.now b{color:var(--on)}
 .tll{display:grid;grid-template-columns:1fr 1fr;margin-top:6px;font-size:11px;color:var(--mu);font-family:var(--num);font-stretch:condensed;letter-spacing:.08em;text-transform:uppercase;font-weight:700}
+/* Program setup */
+.ta{display:block;width:100%;font:inherit;font-size:16px;line-height:1.4;background:var(--bg);color:var(--tx);border:1px solid var(--ln);border-radius:6px;padding:10px;resize:vertical}
+.ta::placeholder{color:#868E96}
+select{width:100%;height:44px;font:inherit;font-size:16px;background:var(--bg);color:var(--tx);border:1px solid var(--ln);border-radius:6px;padding:0 8px}
+.btn.alt{background:var(--cd2);color:var(--tx)}
+.pd{margin-top:12px}.pd>b{font-family:var(--num);font-stretch:condensed;font-size:15px;text-transform:uppercase;letter-spacing:.04em;color:var(--ac)}
+.pe{padding:8px 0;border-top:1px solid var(--ln);margin-top:6px}
+.pl{display:flex;justify-content:space-between;gap:8px;margin-bottom:6px}.pl span:first-child{min-width:0;font-weight:600}
 /* Feels native on a phone: instant press feedback, no tap delay, no text selection on buttons, no pull-to-refresh while scrolling */
 html{overscroll-behavior-y:contain}
 button,summary,[data-a],label.btn{touch-action:manipulation}
@@ -287,7 +295,7 @@ function buildSample(){const weeks=[];
   weeks.push({label:'Block '+(b+1)+' · week '+(i%6+1)+' of 6 ('+'AB'[w]+')',tag:'AB'[w],days})}
  return{name:'Sample plan',sample:true,weeks,anchors:[['Bench press','^Barbell bench press'],['Bent-over row','^Barbell bent-over row'],['Back squat','^Barbell back squat'],['Shoulder press (dumbbell)','^Seated dumbbell shoulder press'],['Lat pulldown','^Lat pulldown \\(neutral'],['Romanian deadlift','^Barbell Romanian deadlift']]}}
 let _sample=null;const sample=()=>_sample||(_sample=buildSample());
-const PROG=()=>D.program||sample(),rotN=()=>PROG().weeks.length,rotIdx=s=>md(wn(s),rotN());
+let _cpS=null,_cp=null;const PROG=()=>D.program?(_cpS===D.program?_cp:(_cpS=D.program,_cp=compileProg(D.program))):sample(),rotN=()=>PROG().weeks.length,rotIdx=s=>md(wn(s),rotN());
 const wLabelAt=i=>{const P=PROG(),k=md(i,P.weeks.length),l=P.weeks[k].label;return l||(P.weeks.length>1?'Week '+(k+1)+' of '+P.weeks.length:'')},wLabel=s=>wLabelAt(rotIdx(s));
 // Muscle of a logged exercise key ("weekday|name"): the program's own tag first, then remembered tags from past programs, then a name guess
 let _mm=null,_mmP=null;
@@ -400,11 +408,158 @@ function rP(){
   h+=`<button class="xr${x==cur?' cur':''}" data-a="wd" data-d="${x}"><span class="xi">${fd(x,{weekday:'short'}).slice(0,3)}</span><div class="xm"><b>${p?esc(p.t):'Rest day'}</b><div class="mut">${fds(x)}${p?' · '+pt+' sets':''}</div></div><span class="tag ${c}">${ic(ico)}${l}</span></button>`}
  return h}
 
+// ---- Program import: LLM prompt, file or paste, typed routine, preview ----
+// Better name-based guess for imported exercises (the sample plan keeps its own tags, so grp() itself is left alone)
+const guessMuscle=(n,d)=>/overhead press|military press|arnold|upright row|front raise|lateral raise|rear.?delt|face pull|reverse fly|shoulder press/i.test(n)?'Shoulders'
+ :/pull.?up|chin.?up|lat pull|pulldown|\brow\b|pullover|deadlift(?!.*(romanian|stiff))/i.test(n)&&!/romanian/i.test(n)?'Back'
+ :/push.?up|bench|chest|\bfly\b|flye|pec deck|cable cross/i.test(n)&&!/rear|reverse/i.test(n)?'Chest'
+ :/dips?\b(?!.*machine)|close.?grip|skull|pushdown|triceps|kickback/i.test(n)?'Triceps'
+ :/good morning|nordic|glute.?ham/i.test(n)?'Hamstrings':/plank|crunch|sit.?up|leg raise|ab wheel|rollout|\bab\b|abs\b/i.test(n)?'Abs'
+ :grp(n,d)||'Other';
+const MUSE=MUS.concat(['Other']),DAYN=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const IMPORT_PROMPT=`I use a workout-tracking app that imports a training program from a JSON file. Please convert my routine (at the bottom) into that format.
+
+RULES
+- Reply with ONLY the JSON. If you can create a downloadable file, name it my-program.json. Otherwise put the JSON in a single code block. No other text.
+- "weeks" lists every week of my repeating rotation, in order. If my routine alternates between two different weeks, write two weeks. If every week is the same, write one. Maximum 12 weeks.
+- Each week has "days": one entry per training day (skip rest days). "day" must be Mon, Tue, Wed, Thu, Fri, Sat or Sun.
+- Each exercise has: "name" (a short, normal gym name), "sets" (a whole number from 1 to 10), "reps" (a number like "8" or a range like "8-12"; for timed exercises use the seconds and mention it in "note"), "muscle" (exactly one of: ${MUSE.join(', ')}), and an optional "note".
+- Count only working sets, not warm-up sets.
+- Plain text only: no quotation marks inside names, no HTML.
+- If anything is unclear, choose the most sensible option and list it under "assumptions".
+
+FORMAT (example)
+{
+  "format": "gymtracker-program",
+  "version": 1,
+  "name": "Push Pull Legs",
+  "unit": "kg",
+  "weeks": [
+    {
+      "label": "Week 1",
+      "days": [
+        {
+          "day": "Mon",
+          "title": "Push",
+          "exercises": [
+            { "name": "Bench press", "sets": 3, "reps": "6-8", "muscle": "Chest", "note": "" },
+            { "name": "Overhead press", "sets": 3, "reps": "8-10", "muscle": "Shoulders", "note": "" }
+          ]
+        }
+      ]
+    }
+  ],
+  "assumptions": ["Weeks 1 and 2 are identical, so I wrote one week."]
+}
+
+MY ROUTINE
+(paste your routine here)
+`;
+// Imported text is untrusted: strip characters that could break markup or the key format, and cap lengths
+const clean=(v,max)=>String(v==null?'':v).replace(/[<>"&`|;\u0000-\u001f\u007f]/g,'').replace(/\s+/g,' ').trim().slice(0,max);
+// Single validation point for imports, typed routines and restored backups. Returns {program, W:[warnings], E:[errors]}
+function normalizeProgram(raw,quiet){const W=[],E=[];
+ if(!raw||typeof raw!=='object'||Array.isArray(raw))return{E:['This is not a program file.'],W};
+ const wsIn=Array.isArray(raw.weeks)?raw.weeks:null;
+ if(!wsIn||!wsIn.length)return{E:['No weeks were found in the file.'],W};
+ if(wsIn.length>12)return{E:['The rotation has '+wsIn.length+' weeks. The maximum is 12.'],W};
+ const weeks=[];let total=0,guessed=0;
+ wsIn.forEach((w,wi)=>{const dIn=w&&Array.isArray(w.days)?w.days:[],days=[],seen={};
+  if(dIn.length>7)W.push('Week '+(wi+1)+' lists more than 7 days. The extra days were skipped.');
+  dIn.slice(0,7).forEach(d=>{if(!d||typeof d!=='object')return;
+   const key=String(d.day==null?'':d.day).trim().slice(0,3).toLowerCase(),idx=DAYN.findIndex(x=>x.toLowerCase()===key);
+   if(idx<0){W.push('Week '+(wi+1)+': skipped a day named “'+clean(d.day,12)+'”.');return}
+   if(seen[idx]){W.push('Week '+(wi+1)+': '+DAYN[idx]+' appears twice. The second one was skipped.');return}
+   const exIn=Array.isArray(d.exercises)?d.exercises:[],ex=[],names={};
+   if(exIn.length>30)W.push('Week '+(wi+1)+' '+DAYN[idx]+': only the first 30 exercises were kept.');
+   exIn.slice(0,30).forEach(e=>{if(!e||typeof e!=='object')return;let n=clean(e.name,60);if(!n){W.push('Week '+(wi+1)+' '+DAYN[idx]+': skipped an exercise with no name.');return}
+    if(names[n.toLowerCase()]){let i=2;while(names[(n+' ('+i+')').toLowerCase()])i++;n=n+' ('+i+')'}names[n.toLowerCase()]=1;
+    let sets=Math.round(Number(e.sets));if(!(sets>=1)){W.push(n+': sets missing, used 3.');sets=3}if(sets>10){W.push(n+': sets capped at 10.');sets=10}
+    let reps=String(e.reps==null?'':e.reps).replace(/[‐-―-]/g,'–').replace(/\s+/g,'');
+    if(!/^\d{1,3}(–\d{1,3})?$/.test(reps)){const m=reps.match(/\d{1,3}/g);reps=m?(m.length>1?m[0]+'–'+m[1]:m[0]):'';if(!reps){W.push(n+': reps missing, used 8–12.');reps='8–12'}else W.push(n+': reps read as '+reps+'.')}
+    let m=MUSE.find(x=>x.toLowerCase()===String(e.muscle==null?'':e.muscle).trim().toLowerCase());
+    if(!m){m=guessMuscle(n,String(idx));guessed++;if(!quiet)W.push(n+': muscle guessed as '+m+'.')}
+    ex.push({name:n,sets,reps,muscle:m,note:clean(e.note,120)})});
+   if(!ex.length){W.push('Week '+(wi+1)+' '+DAYN[idx]+' has no exercises, so it was skipped.');return}
+   seen[idx]=1;days.push({day:DAYN[idx],title:clean(d.title,60)||'Training',exercises:ex});total+=ex.length});
+  weeks.push({label:clean(w&&w.label,40),days})});
+ if(!total)return{E:['No exercises were found in the file.'],W};
+ if(quiet&&guessed)W.push('Muscles were guessed from the exercise names. Check them below.');
+ const as=(Array.isArray(raw.assumptions)?raw.assumptions:[]).slice(0,8).map(a=>clean(a,200)).filter(Boolean);
+ return{program:{name:clean(raw.name,40)||'My program',unit:raw.unit==='lb'?'lb':'kg',weeks,assumptions:as},W,E}}
+function importJSON(txt){txt=String(txt||'').trim();
+ if(txt.length>3e5)return{E:['That file is too large to be a program.'],W:[]};
+ const f=txt.match(/```(?:json)?\s*([\s\S]*?)```/);if(f)txt=f[1].trim();
+ const a=txt.indexOf('{'),b=txt.lastIndexOf('}');if(a>=0&&b>a)txt=txt.slice(a,b+1);
+ let raw;try{raw=JSON.parse(txt)}catch(e){return{E:['That is not valid JSON ('+clean(e.message,70)+'). Ask the assistant to reply with only the JSON.'],W:[]}}
+ return normalizeProgram(raw)}
+// Typed routine -> same structure. Understands "Week 2", "Mon - Push", "Bench press 3x6-8", "3 x 8 Squat", bullets and numbering
+function parseRoutineText(txt){const W=[],weeks=[];let wk=null,day=null;
+ const newWeek=l=>{wk={label:clean(l,40),days:[]};weeks.push(wk);day=null};
+ const reDay=/^(monday|mon|tuesday|tues|tue|wednesday|weds|wed|thursday|thurs|thur|thu|friday|fri|saturday|sat|sunday|sun)\b\s*[:\-–—,.]?\s*(.*)$/i;
+ const exB=/^(\d{1,2})\s*[x×]\s*(\d{1,3}(?:\s*(?:-|–|—|to)\s*\d{1,3})?)\s+(.+)$/i;
+ const exA=/^(.+?)[\s:,\-–—]*\b(\d{1,2})\s*(?:[x×]|sets?\s*(?:of|x|×)?)\s*(\d{1,3}(?:\s*(?:-|–|—|to)\s*\d{1,3})?)(?!\d)/i;
+ const readEx=s=>{let m=exB.exec(s);if(m)return{name:m[3],sets:m[1],reps:m[2].replace(/\s*to\s*/i,'–'),muscle:''};
+  m=exA.exec(s);if(m)return{name:m[1].replace(/[\s:,\-–—]+$/,''),sets:m[2],reps:m[3].replace(/\s*to\s*/i,'–'),muscle:''};return null};
+ String(txt||'').slice(0,60000).split(/\r?\n/).forEach(line=>{let t=line.trim();if(!t)return;
+  if(/^(week|wk)\b/i.test(t)){newWeek(t);return}
+  t=t.replace(/^(?:[-*•]|\d+[.)])\s+/,'');
+  const dm=reDay.exec(t);
+  if(dm){const rem=dm[2].trim();if(/^(rest|off|recovery)\b/i.test(rem)){day=null;return}
+   if(!wk)newWeek('');day={day:dm[1].slice(0,3),title:'',exercises:[]};wk.days.push(day);
+   if(rem){const e=readEx(rem);if(e){day.title='Training';day.exercises.push(e)}else day.title=rem}return}
+  if(!day){W.push('Skipped a line that is not under a day: “'+clean(t,40)+'”.');return}
+  const e=readEx(t);if(e)day.exercises.push(e);else if(!day.title&&!/\d/.test(t))day.title=t;else W.push('Could not read: “'+clean(t,50)+'”.')});
+ const r=normalizeProgram({name:'My program',weeks:weeks.filter(w=>w.days.length)},true);r.W=W.concat(r.W);
+ if(!r.program&&!r.E.length)r.E.push('No days were found. Start each day with its name, for example “Mon - Push”.');return r}
+// Stored program (validated, file shape) -> internal shape used by the app
+function compileProg(P){return{name:P.name,sample:false,anchors:null,weeks:P.weeks.map(w=>{const days={};
+ w.days.forEach(d=>{const day={t:d.title,ex:d.exercises.map(e=>({n:e.name,ns:e.sets,r:e.reps,m:e.muscle,note:e.note}))};day.ty=dayTy(day);days[DAYN.indexOf(d.day)]=day});return{label:w.label,tag:'',days}})}}
+// Internal -> shareable file
+function toFile(){const P=PROG();return{format:'gymtracker-program',version:1,name:P.name,unit:D.unit||'kg',weeks:P.weeks.map(w=>({label:w.label,days:Object.keys(w.days).sort().map(d=>({day:DAYN[d],title:w.days[d].t,exercises:w.days[d].ex.map(e=>({name:e.n,sets:e.ns,reps:String(e.r).replace(/–/g,'-'),muscle:e.m,note:e.note||''}))}))}))}}
+const rememberTags=()=>{D.mmap=D.mmap||{};PROG().weeks.forEach(w=>{for(const d in w.days)w.days[d].ex.forEach(e=>{D.mmap[d+'|'+e.n]=e.m})})};
+function covH(P){const c={};P.weeks.forEach(w=>w.days.forEach(d=>d.exercises.forEach(e=>{c[e.muscle]=(c[e.muscle]||0)+e.sets})));
+ return Object.keys(c).filter(m=>m!='Other').sort((a,b)=>c[b]-c[a]).map(m=>{const v=c[m]/P.weeks.length,r=Math.round(v*10)/10;return`<span class="tag ${v<10?'wn':v>20?'nb':'ok'}">${m} ${r}</span>`}).join('')}
+let bsub=null,PEND=null; // Settings sub-screen: null, 'prog' (set up) or 'prev' (check before saving)
+function openPreview(r){PEND={r,start:iso(mon(iso(new Date())))};bsub='prev';render();scrollTo(0,0)}
+const backB=s=>`<button class="go" data-a="bsb" data-s="${s}" style="margin:10px 2px 0">‹ ${s?'Back':'Settings'}</button>`;
+function rProg(){const cur_=PROG();
+ return backB('')+`<h2>Set up your program</h2><div class="mut" style="margin:0 2px">Now using: <b>${esc(cur_.name)}</b> (${cur_.weeks.length}-week rotation)</div>
+ <h2>Use an AI assistant</h2><div class="card"><div class="mut"><b>1.</b> Copy the prompt.<br><b>2.</b> Paste it into ChatGPT or Claude, replace the last line with your routine, and send it.<br><b>3.</b> Upload the file it gives you, or paste its reply below.</div>
+ <button class="btn" data-a="pcp" id="pcp">Copy the prompt</button>
+ <details style="margin-top:10px"><summary>Show the prompt</summary><textarea class="ta" readonly rows="8" aria-label="Prompt">${esc(IMPORT_PROMPT)}</textarea></details>
+ <label class="btn alt" style="margin-top:12px">Upload the file<input id="pfile" type="file" accept=".json,.txt,application/json,text/plain" hidden></label>
+ <textarea class="ta" id="ptxt" rows="5" placeholder="Or paste the assistant’s reply here" aria-label="Pasted reply" style="margin-top:10px"></textarea>
+ <button class="go" data-a="pck" style="width:100%;height:44px;margin-top:8px">Check the pasted reply</button></div>
+ <h2>Type it in</h2><div class="card"><div class="mut">One day per heading, one exercise per line. Sets x reps after the name.</div>
+ <textarea class="ta" id="rtxt" rows="9" aria-label="Your routine" placeholder="Week 1\nMon - Push\nBench press 3x6-8\nOverhead press 3x8-10\nTue - Pull\nBarbell row 3x8-10\nPull-ups 3x6-10\n\nWeek 2\nMon - Push\n..."></textarea>
+ <button class="btn" data-a="ptx">Read my routine</button></div>
+ <h2>More</h2><div class="card"><button class="go" data-a="pex" style="width:100%;height:44px">Save my program as a file</button>${cur_.sample?'':`<button class="go" data-a="psm" style="width:100%;height:44px;margin-top:8px">Go back to the sample plan</button>`}<div class="mut" style="margin-top:8px">A saved program file can be shared and imported on another phone.</div></div>`}
+function rPrev(){if(!PEND)return rProg();const{r,start}=PEND;
+ if(r.E.length)return backB('prog')+`<h2>Could not read it</h2><div class="warn">${r.E.map(esc).join('<br>')}</div>`;
+ const P=r.program,n=P.weeks.reduce((s,w)=>s+w.days.reduce((a,d)=>a+d.exercises.length,0),0);
+ let h=backB('prog')+`<h2>Check your program</h2><div class="card"><b>${esc(P.name)}</b><div class="mut">${P.weeks.length}-week rotation · ${n} exercises</div></div>`;
+ if(r.W.length)h+=`<details class="card"><summary><b>${r.W.length} thing${r.W.length>1?'s':''} to check</b></summary>${r.W.slice(0,40).map(w=>`<div class="mut" style="margin-top:6px">• ${esc(w)}</div>`).join('')}</details>`;
+ if(P.assumptions.length)h+=`<div class="card"><b>Notes from the assistant</b>${P.assumptions.map(a=>`<div class="mut" style="margin-top:6px">• ${esc(a)}</div>`).join('')}</div>`;
+ h+=`<div class="card"><b>Sets per muscle each week</b><div class="mut" style="margin:4px 0 8px">Most people grow well with 10–20. Orange is under 10.</div><div class="tags" id="cov" style="margin:0">${covH(P)}</div></div>`;
+ P.weeks.forEach((w,wi)=>{h+=`<details class="card"${wi==0?' open':''}><summary><b>${esc(w.label||'Week '+(wi+1))}</b></summary>`;
+  w.days.forEach((d,di)=>{h+=`<div class="pd"><b>${d.day} · ${esc(d.title)}</b>`;
+   d.exercises.forEach((e,ei)=>{h+=`<div class="pe"><div class="pl"><span>${esc(e.name)}</span><span class="mut">${e.sets} × ${esc(e.reps)}</span></div><select data-pm="${wi}.${di}.${ei}" aria-label="Muscle for ${esc(e.name)}">${MUSE.map(m=>`<option${m==e.muscle?' selected':''}>${m}</option>`).join('')}</select></div>`});
+   h+='</div>'});h+='</details>'});
+ return h+`<div class="card"><label>Week 1 starts on (a Monday)<input id="pst" type="date" value="${start}"></label></div><button class="btn" data-a="puse">Use this program</button><button class="go" data-a="pcx" style="width:100%;height:44px;margin-top:8px">Cancel</button>`}
+function applyProgram(){const P=PEND.r.program;rememberTags();D.sstart=D.sstart||D.start;D.program=P;D.mmap=D.mmap||{};
+ P.weeks.forEach(w=>w.days.forEach(d=>d.exercises.forEach(e=>{D.mmap[DAYN.indexOf(d.day)+'|'+e.name]=e.muscle})));
+ D.start=PEND.start;save();PEND=null;bsub=null;tab='w';foc=null;render();scrollTo(0,0)}
+function copyPrompt(btn){const done=()=>{btn.textContent='Copied';setTimeout(()=>{btn.textContent='Copy the prompt'},2000)};
+ const fb=()=>{const t=document.createElement('textarea');t.value=IMPORT_PROMPT;document.body.appendChild(t);t.select();try{document.execCommand('copy');done()}catch(e){alert('Open “Show the prompt” and copy it by hand.')}t.remove()};
+ if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(IMPORT_PROMPT).then(done,fb);else fb()}
+
 // ---- Settings (backup, training options, timer) ----
 const sw=(label,on,a)=>`<div class="row"><span>${label}</span><button class="go" role="switch" aria-checked="${on}" data-a="${a}">${on?'On':'Off'}</button></div>`;
 function rB(){
- const n=Object.keys(D.logs).length;
- return`<h2>Backup</h2><div class="card"><p style="margin:0">${n} days logged. Last backup: ${D.bk?new Date(D.bk).toLocaleDateString():'never'}.</p><button class="btn" data-a="exp">Save backup file</button><p class="mut">Keep the file on Drive or send it to yourself. On a new phone, install the app and restore it here.</p><label class="btn" style="background:var(--cd2);color:var(--tx)">Restore from backup file<input id="imp" type="file" accept=".json,application/json" hidden></label></div>`
+ if(bsub=='prog')return rProg();if(bsub=='prev')return rPrev();
+ const n=Object.keys(D.logs).length,P=PROG();
+ return`<h2>Training program</h2><div class="card"><b>${esc(P.name)}</b><div class="mut">${P.weeks.length}-week rotation</div><button class="btn" data-a="bsb" data-s="prog">Change program</button></div><h2>Backup</h2><div class="card"><p style="margin:0">${n} days logged. Last backup: ${D.bk?new Date(D.bk).toLocaleDateString():'never'}.</p><button class="btn" data-a="exp">Save backup file</button><p class="mut">Keep the file on Drive or send it to yourself. On a new phone, install the app and restore it here.</p><label class="btn" style="background:var(--cd2);color:var(--tx)">Restore from backup file<input id="imp" type="file" accept=".json,application/json" hidden></label></div>`
  +`<h2>Training</h2>${sw('Start the rest timer when I tick a set',D.auto!==false,'aut')}${sw('Shoulder rest mode (hides shoulder-loading work)',!!D.sr,'sr')}<div class="card"><label>Week 1 started on (a Monday)<input id="st" type="date" value="${D.start}"></label></div>`
  +`<h2>Timer cues</h2><div class="card"><div class="mut">Start some music, then tap to hear set start, set end, rest warning and finish over it.</div><button class="btn" data-a="tst">Play all cues</button></div>`}
 function rF(){
@@ -424,13 +579,16 @@ function render(){
  $('#hg').classList.toggle('on',tab=='b');
  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t==tab));
  $('#v').innerHTML=tab=='w'?rW():tab=='f'?rF():tab=='p'?rP():tab=='s'?rS():rB()}
-function imp(f){if(!f)return;f.text().then(s=>{try{const n=JSON.parse(s);if(!n.logs)throw 0;if(confirm('Replace the data on this phone with this backup ('+Object.keys(n.logs).length+' days)?')){D=n;migrateKeys(D);save();render()}}catch(e){alert('That file isn’t a Gym Tracker backup.')}})}
+function imp(f){if(!f)return;f.text().then(s=>{try{const n=JSON.parse(s);if(!n.logs)throw 0;if(confirm('Replace the data on this phone with this backup ('+Object.keys(n.logs).length+' days)?')){D=n;migrateKeys(D);if(D.program){const r=normalizeProgram(D.program);if(r.program)D.program=r.program;else delete D.program}save();render()}}catch(e){alert('That file isn’t a Gym Tracker backup.')}})}
 document.addEventListener('change',e=>{const t=e.target;
  if(t.dataset.k!=null){const a=L().w[t.dataset.k]||(L().w[t.dataset.k]=[]),r=a[+t.dataset.j]||(a[+t.dataset.j]=['','',0]);r[+t.dataset.f]=t.value;save()}
  else if(t.dataset.g){const x=L().x||(L().x={}),a=x[t.dataset.g]||(x[t.dataset.g]=[]);a[+t.dataset.i]=t.checked?1:0;save()}
  else if(t.id=='bw'){L().bw=t.value?+t.value:undefined;save();render()}
  else if(t.id=='st'){D.start=t.value||D.start;save();render()}
- else if(t.id=='imp')imp(t.files[0])});
+ else if(t.id=='imp')imp(t.files[0])
+ else if(t.id=='pfile'){const f=t.files[0];if(f){if(f.size>3e5)openPreview({E:['That file is too large to be a program.'],W:[]});else f.text().then(x=>openPreview(importJSON(x)))}}
+ else if(t.dataset.pm){const[w,d,i]=t.dataset.pm.split('.').map(Number);PEND.r.program.weeks[w].days[d].exercises[i].muscle=t.value;$('#cov').innerHTML=covH(PEND.r.program)}
+ else if(t.id=='pst')PEND.start=t.value||PEND.start});
 document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t)return;const a=t.dataset.a;
  if(a=='ck'){const i=t.parentElement.querySelectorAll('input'),kg=i[0].value||i[0].placeholder,rp=i[1].value||i[1].placeholder,ar=L().w[t.dataset.k]||(L().w[t.dataset.k]=[]),r=ar[+t.dataset.j]||(ar[+t.dataset.j]=['','',0]);
   if(r[2])r[2]=0;else{if(isNaN(parseFloat(kg))||isNaN(parseFloat(rp))){i[isNaN(parseFloat(kg))?0:1].focus();return}r[0]=kg;r[1]=rp;r[2]=1}
@@ -439,7 +597,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t
   const ex=exs().find(x=>x.k==t.dataset.k);if(r[2]&&ex&&cnt(L().w,ex.k,ex.ns)>=ex.ns){foc=null;render();scrollTo(0,0)}}
  else if(a=='ft'||a=='fm'||a=='fp'){const f=F.find(x=>x[0]==t.dataset.i),m=L().f,q=m[f[0]]||0;m[f[0]]=a=='ft'?(q>0?0:f[3]):Math.max(0,+(q+(a=='fp'?f[4]:-f[4])).toFixed(2));save();render()}
  else if(a=='pv'||a=='nx'){const d=dt(cur);d.setDate(d.getDate()+(a=='nx'?1:-1));cur=iso(d);foc=null;render()}
- else if(a=='tab'){tab=t.dataset.t;stAn=true;render();scrollTo(0,0)}
+ else if(a=='tab'){tab=t.dataset.t;bsub=null;stAn=true;render();scrollTo(0,0)}
  else if(a=='lf'){const ar=L().w[t.dataset.k]||(L().w[t.dataset.k]=[]),r=ar[+t.dataset.j]||(ar[+t.dataset.j]=['','',0]),c=r[3];r[3]=(c===''||c==null)?0:c>=3?'':c+1;t.textContent=lfT(r[3]);t.classList.toggle('on',r[3]!==''&&r[3]!=null);save()}
  else if(a=='nt'){const n=t.dataset.n;D.notes=D.notes||{};const v=prompt('Note for '+n+' (leave empty to delete)',D.notes[n]||'');if(v!==null){if(v.trim())D.notes[n]=v.trim();else delete D.notes[n];save();render()}}
  else if(a=='go'){const ns=+t.dataset.s,g=(day().w||{})[t.dataset.k]||[];let si=0;while(si<ns&&g[si]&&g[si][2])si++;if(si>=ns)si=0;startT({k:t.dataset.k,n:t.dataset.n,ns,r:t.dataset.r,si})}
@@ -450,6 +608,14 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t
  else if(a=='tst'){snd();[['start',0],['end',1200],['warn',2400],['done',3800]].forEach(([c,d])=>setTimeout(()=>tone(CUE[c]),d))}
  else if(a=='bk'){tab='b';render()}
  else if(a=='sr'){D.sr=!D.sr;save();render()}
+ else if(a=='bsb'){bsub=t.dataset.s||null;render();scrollTo(0,0)}
+ else if(a=='pcp')copyPrompt(t)
+ else if(a=='pck'){const r=importJSON($('#ptxt').value);if(!$('#ptxt').value.trim()){alert('Paste the assistant’s reply first.');return}openPreview(r)}
+ else if(a=='ptx'){if(!$('#rtxt').value.trim()){alert('Type or paste your routine first.');return}openPreview(parseRoutineText($('#rtxt').value))}
+ else if(a=='puse'){if(PEND&&PEND.r.program)applyProgram()}
+ else if(a=='pcx'){PEND=null;bsub='prog';render();scrollTo(0,0)}
+ else if(a=='psm'){if(confirm('Go back to the sample plan? Your logs are kept.')){rememberTags();delete D.program;if(D.sstart)D.start=D.sstart;save();bsub=null;tab='w';foc=null;render();scrollTo(0,0)}}
+ else if(a=='pex'){const u=URL.createObjectURL(new Blob([JSON.stringify(toFile(),null,1)],{type:'application/json'})),x=document.createElement('a');x.href=u;x.download='my-program.json';x.click();setTimeout(()=>URL.revokeObjectURL(u),1e4)}
  else if(a=='aut'){D.auto=D.auto===false;save();render()}
  else if(a=='ss'){L().ss=Date.now();foc=null;save();render();scrollTo(0,0)}
  else if(a=='fin'){L().se=Date.now();if(T)stopT();save();render();scrollTo(0,0)}
@@ -649,5 +815,6 @@ function sugg(pv,r){
  else if(rir!=null&&rir>=3)t=`Try ${w+2.5} kg (+2.5): ${rir}+ reps were left`;
  else t=`Stay at ${w} kg: beat ${mn} reps on every set`;
  return`<div class="sg">${t}</div>`}
+if(D.program){const r=normalizeProgram(D.program);if(r.program)D.program=r.program;else delete D.program}
 render();
 </script></body></html>
